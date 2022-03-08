@@ -52,4 +52,5 @@ def main():
         print(jsom2json(' '.join(jsomargs)))
 
 
-main()
+if __name__ == '__main__':
+    main()
