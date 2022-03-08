@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+
+import sys
+import json
+
+from jsom import JsomCoder
+
+
+def json2jsom(s):
+    j = JsomCoder()
+    d = json.loads(s)
+    s = j.encode(d)
+    return '\n'.join(line.rstrip() for line in s.splitlines())
+
+
+class JsonDefaultEncoder(json.JSONEncoder):
+    def default(self, obj):
+        return str(obj)
+
+
+def jsom2json(s):
+    j = JsomCoder()
+    d = j.safe_decode(s)
+    return json.dumps(d, cls=JsonDefaultEncoder)
+
+
+def read_arg(fn):
+    if fn == '-':
+        return sys.stdin.read()
+    return open(fn).read()
+
+
+def main():
+    i = 1
+    jsomargs = []
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        i += 1
+
+        if arg in ['-d', '--decode']:
+            contents = read_arg(sys.argv[i])
+            print(jsom2json(contents))
+            i += 1
+        elif arg in ['-e', '--encode']:
+            contents = read_arg(sys.argv[i])
+            print(json2jsom(contents))
+            i += 1
+        else:
+            jsomargs.append(arg)
+
+    if jsomargs:
+        print(jsom2json(' '.join(jsomargs)))
+
+
+main()
