@@ -1,6 +1,6 @@
 import pytest
 
-from jsom import JsomCoder
+from jsom import JsomCoder, deep_match
 
 
 @pytest.mark.parametrize("s", [

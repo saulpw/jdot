@@ -105,14 +105,18 @@ def deep_del(a: dict, b: dict):
 
 
 class JsomCoder:
-    def __init__(self, macros={}, **kwargs):
+    def __init__(self, **kwargs):
         self.toktuple = None
-        self.macros = {
-            'null': None,
-        }
-        self.macros.update(macros)
-        self.revmacros = {v:k for k,v in self.macros.items() if not isinstance(v, (dict, list))}
         self.options = AttrDict(kwargs)
+        self.globals = AttrDict(true=True, false=False, null=None,
+                                macros={}, options=self.options)
+        self._revmacros = None
+
+    @property
+    def revmacros(self):
+        if self._revmacros is None:
+            self._revmacros = {v:k for k,v in self.globals.macros.items() if not isinstance(v, (dict, list))}
+        return self._revmacros
 
     def debug(self, *args):
         if self.options.debug:
@@ -229,22 +233,25 @@ class JsomCoder:
                 name = next(it).string
                 args = []
                 self.decode(it, top=args)  # recurse
-                if name not in self.macros:
+                if name not in self.globals.macros:
                     self.error(f'no macro named "{name}"')
 
-                out = self.instantiate(self.macros[name], args, name)  # mutates args
+                out = self.instantiate(self.globals.macros[name], args, name)  # mutates args
                 if args:  # none should be left over
                     self.error(f'too many args given to "{name}" {args}')
 
             elif tok == ')':  # end macro arguments
                 break  # exit recurse
 
-            elif tok in self.macros:  # bare macro, instantiate without args
-                out = self.instantiate(self.macros[tok], [], tok)
+            elif tok in self.globals:
+                if not stack:
+                    stack.append(self.globals[tok])
+                else:
+                    out = self.globals[tok]
 
-            elif tok == 'false': out = False
-            elif tok == 'true': out = True
-            elif tok == 'null': out = None
+            elif tok in self.globals.macros:  # bare macro, instantiate without args
+                out = self.instantiate(self.globals.macros[tok], [], tok)
+
             else:
                 # try parsing as number
                 try:
@@ -314,7 +321,7 @@ class JsomCoder:
         if isinstance(obj, dict):
             # emit first macro, if any match
             innards = []
-            for macroname, macro in self.macros.items():
+            for macroname, macro in self.globals.macros.items():
                 m = deep_match(obj, macro)
                 if m is False:  # didn't match
                     continue

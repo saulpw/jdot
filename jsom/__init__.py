@@ -1,4 +1,4 @@
-from .jsom import JsomCoder
+from .jsom import JsomCoder, deep_match
 
 JsomEncoder = JsomDecoder = JsomEncoderDecoder = JsomCoder
 
@@ -7,4 +7,5 @@ __all__ = [
     "JsomDecoder",
     "JsomEncoder",
     "JsomCoder",
+    "deep_match",
 ]

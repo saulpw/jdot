@@ -58,10 +58,12 @@ With macros, it could look like this:
 ```
 macros.point < .points [{ .xy { .x ?x .y ?y } }] .names [ ?name ] >
 
-(point 0 0 "nowhere")
-(point 0 4 "here")
-(point 4 0 "there")
-(point 4 4 "everywhere")
+.objects {
+    (point 0 0 "nowhere")
+    (point 0 4 "here")
+    (point 4 0 "there")
+    (point 4 4 "everywhere")
+}
 ```
 
 
