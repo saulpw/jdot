@@ -7,7 +7,7 @@ from jsom import JsomCoder
 
 
 def json2jsom(s):
-    j = JsomCoder()
+    j = JsomCoder(indent=' ')
     d = json.loads(s)
     s = j.encode(d)
     return '\n'.join(line.rstrip() for line in s.splitlines())

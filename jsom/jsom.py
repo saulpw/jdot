@@ -2,10 +2,29 @@
 
 import sys
 import collections
-import json
 
 
 Token = collections.namedtuple('Token', 'type string start end line')
+
+
+class AttrDict(dict):
+    'Augment a dict with more convenient .attr syntax.  not-present keys return None.'
+    def __getattr__(self, k):
+        try:
+            v = self[k]
+            if isinstance(v, dict) and not isinstance(v, AttrDict):
+                v = AttrDict(v)
+            return v
+        except KeyError:
+            if k.startswith("__"):
+                raise AttributeError
+            return None
+
+    def __setattr__(self, k, v):
+        self[k] = v
+
+    def __dir__(self):
+        return self.keys()
 
 
 class Variable:
@@ -20,7 +39,7 @@ class Variable:
 class InnerDict(dict):
     'instantiate only the inner keys and not the dict itself'
     def __repr__(self):
-        r = JsomEncoderDecoder().encode(self)
+        r = JsomCoder().encode(self)
         return f'<{r}>'
 
 
@@ -86,18 +105,17 @@ def deep_del(a: dict, b: dict):
 
 
 class JsomCoder:
-    def __init__(self, macros={}, indent=' ', debug=0):
-        self.indent = indent
+    def __init__(self, macros={}, **kwargs):
         self.toktuple = None
         self.macros = {
             'null': None,
         }
         self.macros.update(macros)
         self.revmacros = {v:k for k,v in self.macros.items() if not isinstance(v, (dict, list))}
-        self._debug = debug
+        self.options = AttrDict(kwargs)
 
-    def debug(self, *args, level=1):
-        if self._debug >= level:
+    def debug(self, *args):
+        if self.options.debug:
             print(*args, file=sys.stderr)
 
     def error(self, msg):
@@ -379,4 +397,4 @@ class JsomCoder:
             return f'{obj}'
 
     def encode(self, d):
-        return ' '.join(self.iterencode(d, indent=self.indent)).strip()
+        return ' '.join(self.iterencode(d, indent=self.options.indent)).strip()
