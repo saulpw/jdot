@@ -1,8 +1,10 @@
 # JSOM: JSON minus Notation plus Macros
 
-[Alternate names for consideration:
+[
+Alternate names for consideration:
  - NOSJ: Nicer Object Syntax for JSON
- - JSM]
+ - JSM
+]
 
 ## A human-readable, -writable, and diffable format for reasonable JSON
 
