@@ -108,8 +108,9 @@ class JsomCoder:
     def __init__(self, **kwargs):
         self.toktuple = None
         self.options = AttrDict(kwargs)
-        self.globals = AttrDict(true=True, false=False, null=None,
-                                macros={}, options=self.options)
+        self.macros = AttrDict(kwargs)
+        self.globals = AttrDict(macros=self.macros, options=self.options)
+        self.globals['globals'] = self.globals
         self._revmacros = None
 
     @property
@@ -130,7 +131,7 @@ class JsomCoder:
         startchnum = 0
         tok = ''
         for linenum, line in enumerate(s.splitlines()):
-            self.debug(line)
+            self.debug(f'{linenum}: {line}')
 
             chnum = 0
             while chnum < len(line):
@@ -160,27 +161,28 @@ class JsomCoder:
                 else:
                     tok += ch
 
-        if tok:
-            yield Token(tok, tok, (linenum, chnum), (linenum, chnum+1), line)
+            if tok:
+                yield Token(tok, tok, (linenum, chnum), (linenum, chnum+1), line)
+                tok = ''
 
-    def safe_decode(self, it, top=None):
+    def decode(self, s):
         try:
-            return self.decode(it, top=top)
+            objs = self.iterdecode(self.tokenize(s))
         except Exception as e:
             t = self.toktuple
             print(f'ERROR: {type(e).__name__} {e} at line {t.start[0]+1} (column {t.start[1]})', file=sys.stderr)
             print(t.line, file=sys.stderr)
             raise
 
-    def decode(self, it, top=None):
-        '*it* can be str or generator of Token.  Return parsed object.'
-        key = None
-        stack = []  # path from root
-        if top is not None:
-            stack.append(top)
+        return objs[0] if len(objs) == 1 else objs
 
-        if isinstance(it, str):
-            it = self.tokenize(it)
+    def iterdecode(self, it):
+        '*it* can be str or generator of Token.  Return list of parsed objects.'
+
+        key = None
+        ret = []  # root list to return
+        stack = [ret]  # path from root
+        self.globals.output = ret  # make available as '@output'
 
         while True:
             try:
@@ -191,19 +193,35 @@ class JsomCoder:
             out = None
             append_stack = False
             tok = self.toktuple.string
+
+            self.debug(tok)
+
             if tok[0] == '?':  # variable
                 out = Variable(tok[1:])
 
-            elif tok[0] == '.':  # dict key
-                if not stack:  # create a toplevel object so outermost {} is not necessary
-                    assert top is None
-                    top = dict()
-                    stack.append(top)
+            elif tok[0] == '@':  # global variable like '@options' and '@macros'
+                name = tok[1:]
+                if name not in self.globals:
+                    self.error(f'no such global {name}')
 
+                self.debug(f'global @{tok}')
+                stack = [self.globals[name]]
+                continue
+
+            elif tok in self.macros:  # bare macro, instantiate without args
+                out = self.instantiate(self.macros[tok], [], tok)
+
+            elif tok == '!':  # show debugging info
+                print('macros', self.macros)
+                print('options', self.options)
+                print('stack', stack)
+                continue
+
+            elif tok[0] == '.':  # dict key
                 if isinstance(stack[-1], list):
-                    r = dict()
-                    stack[-1].append(r)
-                    stack[-1] = r
+                    r = dict()           # open new dict by default
+                    stack[-1].append(r)  # append it to the list
+                    stack[-1] = r        # and replace the list with it
                 elif key is not None:  # two keys in a row: parent dict has only one element (us)
                     r = dict()
                     old = stack.pop()
@@ -212,6 +230,9 @@ class JsomCoder:
 
                 key = tok[1:]
                 continue
+
+            elif self.toktuple.type == 'str':  # string literal
+                out = tok
 
             elif tok == '{':  # open dict outer
                 out = dict()
@@ -231,26 +252,23 @@ class JsomCoder:
 
             elif tok == '(':  # open macro, instantiate with args
                 name = next(it).string
-                args = []
-                self.decode(it, top=args)  # recurse
-                if name not in self.globals.macros:
+                args = self.iterdecode(it)  # recurse
+                if name not in self.macros:
                     self.error(f'no macro named "{name}"')
 
-                out = self.instantiate(self.globals.macros[name], args, name)  # mutates args
+                out = self.instantiate(self.macros[name], args, name)  # mutates args
                 if args:  # none should be left over
                     self.error(f'too many args given to "{name}" {args}')
 
             elif tok == ')':  # end macro arguments
                 break  # exit recurse
 
-            elif tok in self.globals:
-                if not stack:
-                    stack.append(self.globals[tok])
-                else:
-                    out = self.globals[tok]
-
-            elif tok in self.globals.macros:  # bare macro, instantiate without args
-                out = self.instantiate(self.globals.macros[tok], [], tok)
+            elif tok == 'true':
+                out = True
+            elif tok == 'false':
+                out = False
+            elif tok == 'null':
+                out = None
 
             else:
                 # try parsing as number
@@ -260,26 +278,25 @@ class JsomCoder:
                     try:
                         out = float(tok)
                     except ValueError:
-                        out = tok  # pass it through and hope for the best
+                        self.error(f"unknown token '{out}'")
+                        out = tok  # pass it through as a string and hope for the best
 
             # add 'out' to the top object
-
-            if not stack:  # create a toplevel object (outermost [] is implied without a key)
-                assert top is None
-                top = list()
-                stack.append(top)
 
             if isinstance(stack[-1], dict):
                 if not key:
                     if isinstance(out, InnerDict):
-                        stack[-1].update(out)
+                        deep_update(stack[-1], out)
+                    elif isinstance(out, dict):
+                        deep_update(stack[-1], out)
+#                        # leave old dict there, to be filled in with the 'new' dicts inners
                     else:
-                        self.error(f'no key given for {self.literal(out)})')
+                        self.error(f'no key given for value {self.literal(out)}')
                 else:
                     if key in stack[-1]:
                         oldval = stack[-1][key]
                         if not isinstance(oldval, type(out)):
-                            self.error(f'{key} has existing value of {type(oldval)}')
+                            self.error(f'{key} has existing {type(oldval)} value')
                         if isinstance(out, dict):
                             deep_update(oldval, out)
                         elif isinstance(out, list):
@@ -293,13 +310,14 @@ class JsomCoder:
             elif isinstance(stack[-1], list):
                 assert not isinstance(out, InnerDict)
                 stack[-1].append(out)
+
             else:
                 self.error('non-container on top-of-stack')
 
             if append_stack:
                 stack.append(out)
 
-        return top
+        return ret
 
     def instantiate(self, v, args, tmplname):
         ''
@@ -321,7 +339,7 @@ class JsomCoder:
         if isinstance(obj, dict):
             # emit first macro, if any match
             innards = []
-            for macroname, macro in self.globals.macros.items():
+            for macroname, macro in self.macros.items():
                 m = deep_match(obj, macro)
                 if m is False:  # didn't match
                     continue
@@ -403,5 +421,9 @@ class JsomCoder:
         else:
             return f'{obj}'
 
-    def encode(self, d):
-        return ' '.join(self.iterencode(d, indent=self.options.indent)).strip()
+    def encode(self, *args):
+        if len(args) == 1:
+            args = args[0]
+        else:
+            args = list(args)
+        return ' '.join(self.iterencode(args, indent=self.options.indent)).strip()

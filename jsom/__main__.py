@@ -19,8 +19,8 @@ class JsonDefaultEncoder(json.JSONEncoder):
 
 
 def jsom2json(s):
-    j = JsomCoder()
-    d = j.safe_decode(s)
+    j = JsomCoder(indent=' ')
+    d = j.decode(s)
     return json.dumps(d, cls=JsonDefaultEncoder)
 
 

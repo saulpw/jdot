@@ -1,10 +1,6 @@
 # JSOM: JSON minus Notation plus Macros
 
-[
-Alternate names for consideration:
- - NOSJ: Nicer Object Syntax for JSON
- - JSM
-]
+[Alternate possible names: NOSJ (Nicer Object Syntax for JSON), JSM]
 
 ## A human-readable, -writable, and diffable format for reasonable JSON
 
@@ -55,10 +51,10 @@ which translates to this JSON:
 }
 ```
 
-With macros, it could look like this:
+Using a macro, it could look like this (and the resulting output would be the same as above):
 
 ```
-macros.point < .points [{ .xy { .x ?x .y ?y } }] .names [ ?name ] >
+macros .point < .points [{ .xy { .x ?x .y ?y } }] .names [ ?name ] >
 
 .objects {
     (point 0 0 "nowhere")
@@ -68,33 +64,54 @@ macros.point < .points [{ .xy { .x ?x .y ?y } }] .names [ ?name ] >
 }
 ```
 
+# Usage
 
-# CLI Usage
+## CLI
 
 The `jsom` command-line utility converts to and from JSOM:
 
 ```
-$ jsom .a 3 .b foo   # decode args to JSON
+$ jsom .a 3 .b foo   # decode JSOM in args to JSON
 { "a": 3, "b": "foo" }
 
-$ echo '{ "a": 3, "b": "foo" }' | jsom  # encode stdin to JSON
+$ echo '{ "a": 3, "b": "foo" }' | jsom  # encode JSON on stdin to JSOM
 .a 3 .b "foo"
 
-$ jsom -e foo.json   # encode foo.json into JSOM on stdout; effectively json2jsom
+$ jsom -e foo.json   # encode: foo.json into JSOM on stdout; effectively json2jsom
 
-$ jsom -d bar.jsom   # decode bar.jsom into JSON on stdout; effectively jsom2json
+$ jsom -d bar.jsom   # decode: bar.jsom into JSON on stdout; effectively jsom2json
 ```
 
-# Loose specification
+## Library
 
-### whitespace and comments
+The `jsom` Python library can also be used programmatically:
 
-  - whitespace is not necessary between symbols
-  - where whitespace delimits tokens, any whitespace is fine; newlines or specific indentation is not necessary
-  - `;` begins a comment until end of line
+```
+>>> from jsom import JsomCoder
+
+>>> j = JsomCoder()
+
+>>> j.encode(dict(a="foo", pi=3.14, c=[1,2,3,4]))
+ .a "foo"
+  .pi 3.14
+  .c [1 2 3 4]
+
+>>> j.decode('.a "foo" .pi 3.14 .c [1 2 3 4]')
+
+{'a': 'foo', 'pi': 3.14, 'c': [1, 2, 3, 4]}
+```
+
+# format specification
+
+## whitespace and comments
+
+  - whitespace-separated tokens and quoted strings
+  - any whitespace is fine; newlines always possible and never required
+    -  no specific indentation is necessary
+  - `#` begins a comment until end of line
   - `[]{}<>()` are reserved symbols and cannot be part of any other token
 
-### basic types
+## primitive types
 
 - int (`42`)
 - float (`2.71`)
@@ -116,29 +133,22 @@ $ jsom -d bar.jsom   # decode bar.jsom into JSON on stdout; effectively jsom2jso
     - string in double quotes, standard escape with `\\`
   - key must be reasonable: no spaces or leading symbols that have meaning in JSOM
 
-### macro invokation
-- `(macro-name arg1 arg2 ...)` invokes a macro with given args
-- `macro-name` (no parens) invokes a macro without args
-
-
-### macro definition
-- defined in their own file; pass filename to `-m` option
-- macros are simply elements in the toplevel dict, with the key as the macro name:
-
-#### whole macros
-
-With this macro defined in a macros file:
+### macros
 
 ```
-.foo {
-    .bar 15
-    .baz [ "a" "b" ]
-}
+macros .default-bounds { .min 0 .max 1000 }
+macros .bounds { .min ?min .max ?max }
+macros .inner-bounds < .min ?min .max ?max >
 ```
 
-`foo` in any JSOM file will emit a copy of this dict with keys "bar" and "baz".
+`macros` is a "global" which pushes the macros dictionary.
+Keys in this dictionary are macro names, and the values are the macro templates.
+Variable values are designated with `?varname`.
 
-#### variable elements
+The macro definition and template are given using the same JSOM syntax.
+Output from JSON converted to JSOM can be copied verbatim into a macro.
+
+#### macro parameters
 
 Macro parameters can be given in the definition with `?name` (name is optional; parameters are positional).
 
@@ -149,12 +159,37 @@ Macro parameters can be given in the definition with `?name` (name is optional; 
 }
 ```
 
-`(row 42 { .lat 72.82398 .long 122.91287 })`` will emit `{ "options": { "max": 42 }, "point": { "lat": 72.82398: "long": 122.91287 } }`
-
 Variables can match any type, including containers.
 
-A whole macro must match completely in order to be emitted by the json2jsom converter.
+The entire macro must match completely in order to be emitted by `encode()`.
 No keys can be missing and no extra keys may be present.
+
+### macro invocation
+
+A macro can be invoked lisp-style with parens wrapping the macro name and its arguments (which themselves can be values or containers or other nested macros):
+
+```
+(bounds 5 20)
+```
+
+A macro without arguments can be invoked without the wrapping parens:
+
+```
+default-bounds
+```
+
+A partial or inner macro, with its template enclosed in `<` and `>`, is like a dict, but applies its key/value pairs to the enclosing dict, instead of opening a new dict:
+
+```
+{ (inner-bounds 0 100) .val 50 }
+```
+
+is decoded to:
+
+```
+{ "min": 0, "max": 100, "val": 50 }
+```
+
 
 #### partial macros
 
