@@ -60,6 +60,8 @@ def deep_update(a: dict, b: dict, type=lambda v: v):
 def deep_match(a, b):
     'Return dict of matches between a and b if a and b are dicts/lists and a and b are exact matches, or boolean equality otherwise.'
     if isinstance(b, Variable):  # Variables match anything
+        if b.key == '?':  # match but don't return value
+            return {}
         return {b.key: a}
 
     elif isinstance(a, dict) and isinstance(b, dict):
@@ -108,7 +110,7 @@ class JsomCoder:
     def __init__(self, **kwargs):
         self.toktuple = None
         self.options = AttrDict(kwargs)
-        self.macros = AttrDict(kwargs)
+        self.macros = AttrDict()
         self.globals = AttrDict(macros=self.macros, options=self.options)
         self.globals['globals'] = self.globals
         self._revmacros = None
@@ -119,9 +121,9 @@ class JsomCoder:
             self._revmacros = {v:k for k,v in self.globals.macros.items() if not isinstance(v, (dict, list))}
         return self._revmacros
 
-    def debug(self, *args):
+    def debug(self, *args, **kwargs):
         if self.options.debug:
-            print(*args, file=sys.stderr)
+            print(*args, file=sys.stderr, **kwargs)
 
     def error(self, msg):
         raise Exception(msg)
@@ -182,7 +184,7 @@ class JsomCoder:
         key = None
         ret = []  # root list to return
         stack = [ret]  # path from root
-        self.globals.output = ret  # make available as '@output'
+        self.globals['output'] = ret  # make available as '@output'
 
         while True:
             try:
@@ -194,7 +196,7 @@ class JsomCoder:
             append_stack = False
             tok = self.toktuple.string
 
-            self.debug(tok)
+            self.debug(tok, end=' ')
 
             if tok[0] == '?':  # variable
                 out = Variable(tok[1:])
@@ -204,7 +206,7 @@ class JsomCoder:
                 if name not in self.globals:
                     self.error(f'no such global {name}')
 
-                self.debug(f'global @{tok}')
+                self.debug(f'global {tok}')
                 stack = [self.globals[name]]
                 continue
 
