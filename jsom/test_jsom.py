@@ -22,7 +22,7 @@ def test_roundtrip(s):
 def test_macro():
     j = JsomCoder()
     d = j.decode('@macros .foo { .x 2 }')
-    assert 'foo' in j.globals.macros, j.globals.macros
+    assert 'foo' in j.globals['macros'], j.globals['macros']
 
 
 @pytest.mark.parametrize(("s", "out"), [
@@ -32,5 +32,5 @@ def test_decode(s, out):
     j = JsomCoder()
     d = j.decode(s)
     assert out == JsomCoder().encode(d)  # un-macroed
-    macrodefs = JsomCoder().encode(j.globals.macros)
+    macrodefs = JsomCoder().encode(j.globals['macros'])
     assert ' '.join(['@macros', macrodefs, '@output', j.encode(d)]) == s  # re-macroed
