@@ -94,13 +94,10 @@ class JsomCoder:
         self.macros = dict()
         self.globals = dict(macros=self.macros, options=self.options)
         self.globals['globals'] = self.globals
-        self._revmacros = None
+        self.revmacros = {}
 
-    @property
-    def revmacros(self):
-        if self._revmacros is None:
-            self._revmacros = {v:k for k,v in self.globals.macros.items() if not isinstance(v, (dict, list))}
-        return self._revmacros
+    def restart(self):
+        self.revmacros = {v: k for k, v in self.macros.items() if not isinstance(v, (dict, list))}
 
     def debug(self, *args, **kwargs):
         if self.options['debug']:
@@ -189,6 +186,7 @@ class JsomCoder:
 
                 self.debug(f'global {tok}')
                 stack = [self.globals[name]]
+                self.restart()
                 continue
 
             elif tok in self.macros:  # bare macro, instantiate without args
@@ -291,7 +289,6 @@ class JsomCoder:
                     key = None
 
             elif isinstance(stack[-1], list):
-                assert not isinstance(out, InnerDict)
                 stack[-1].append(out)
 
             else:

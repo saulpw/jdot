@@ -2,12 +2,11 @@
 
 [Alternate possible names: NOSJ (Nicer Object Syntax for JSON), JSM]
 
-## A human-readable, -writable, and diffable format for reasonable JSON
+## A human-readable, -writable, and -diffable format for reasonable JSON
 
 Remove all the extraneous symbols from JSON, and it becomes a lot easier to read and write.  Add comments and macros and it's almost pleasant.  And the parser is easier to write too.  Some little ergonomics go a long way.
 
-Conversion between JSOM and reasonable JSON is lossless.
-
+Conversion between reasonable JSON and JSOM is lossless.
 
 ### Features
 
@@ -54,8 +53,10 @@ which translates to this JSON:
 Using a macro, it could look like this (and the resulting output would be the same as above):
 
 ```
-macros .point < .points [{ .xy { .x ?x .y ?y } }] .names [ ?name ] >
+@macros
+.point { .points [{ .xy { .x ?x .y ?y } }] .names [ ?name ] }
 
+@output
 .objects {
     (point 0 0 "nowhere")
     (point 0 4 "here")
