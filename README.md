@@ -21,7 +21,7 @@ Conversion between reasonable JSON and JSOM is lossless.
 - no extraneous characters
 - barebones simple parser
 - whitespace agnostic
-- line comments with `;`
+- line comments
 - convenient macros
 - feels a bit like Lisp
 
@@ -135,7 +135,7 @@ The `jsom` Python library can also be used programmatically:
   - whitespace-separated tokens and quoted strings
   - any whitespace is fine; newlines always possible and never required
     -  no specific indentation is necessary
-  - `#` begins a comment until end of line
+  - `;` begins a comment until end of line
   - `[]{}<>()` are reserved symbols and cannot be part of any other token
 
 ## primitive types
