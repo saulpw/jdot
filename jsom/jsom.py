@@ -31,7 +31,7 @@ def deep_update(a: dict, b: dict, type=lambda v: v):
         if isinstance(va, dict) and isinstance(vb, dict):
             deep_update(va, vb)
         elif isinstance(va, list):
-            va.append(vb)
+            va.extend(vb)
         else:
             a[k] = type(vb)
     return a
