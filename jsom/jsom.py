@@ -7,26 +7,6 @@ import collections
 Token = collections.namedtuple('Token', 'type string start end line')
 
 
-class AttrDict(dict):
-    'Augment a dict with more convenient .attr syntax.  not-present keys return None.'
-    def __getattr__(self, k):
-        try:
-            v = self[k]
-            if isinstance(v, dict) and not isinstance(v, AttrDict):
-                v = AttrDict(v)
-            return v
-        except KeyError:
-            if k.startswith("__"):
-                raise AttributeError
-            return None
-
-    def __setattr__(self, k, v):
-        self[k] = v
-
-    def __dir__(self):
-        return self.keys()
-
-
 class Variable:
     def __init__(self, key):
         '''*key* is key in output dict.'''
@@ -109,9 +89,10 @@ def deep_del(a: dict, b: dict):
 class JsomCoder:
     def __init__(self, **kwargs):
         self.toktuple = None
-        self.options = AttrDict(kwargs)
-        self.macros = AttrDict()
-        self.globals = AttrDict(macros=self.macros, options=self.options)
+        self.options = dict(debug=False, indent='')
+        self.options.update(kwargs)
+        self.macros = dict()
+        self.globals = dict(macros=self.macros, options=self.options)
         self.globals['globals'] = self.globals
         self._revmacros = None
 
@@ -122,7 +103,7 @@ class JsomCoder:
         return self._revmacros
 
     def debug(self, *args, **kwargs):
-        if self.options.debug:
+        if self.options['debug']:
             print(*args, file=sys.stderr, **kwargs)
 
     def error(self, msg):
@@ -428,4 +409,4 @@ class JsomCoder:
             args = args[0]
         else:
             args = list(args)
-        return ' '.join(self.iterencode(args, indent=self.options.indent)).strip()
+        return ' '.join(self.iterencode(args, indent=self.options['indent'])).strip()
