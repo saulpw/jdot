@@ -8,7 +8,15 @@ Remove all the extraneous symbols from JSON, and it becomes a lot easier to read
 
 Conversion between reasonable JSON and JSOM is lossless.
 
-### Features
+## Table of Contents
+
+- Features
+- Usage
+- Install
+- Format
+  - Macros
+
+## Features
 
 - no extraneous characters
 - barebones simple parser
@@ -17,7 +25,7 @@ Conversion between reasonable JSON and JSOM is lossless.
 - convenient macros
 - feels a bit like Lisp
 
-## The JSOM Format
+## What does JSOM look like?
 
 JSOM looks like this:
 
@@ -63,6 +71,24 @@ Using a macro, it could look like this (and the resulting output would be the sa
     (point 4 0 "there")
     (point 4 4 "everywhere")
 }
+```
+
+# Install
+
+jsom requires [Python 3.6](https://wsvincent.com/install-python/) or higher.
+
+Once Python is set-up on your operating system, you can install jsom using pip:
+
+```
+pip3 install git+https://github.com/saulpw/jsom.git
+```
+
+or you can run the install script locally from your machine:
+
+```
+git clone https://github.com/saulpw/jsom.git
+cd jsom
+python3 setup.py install
 ```
 
 # Usage
@@ -134,55 +160,74 @@ The `jsom` Python library can also be used programmatically:
     - string in double quotes, standard escape with `\\`
   - key must be reasonable: no spaces or leading symbols that have meaning in JSOM
 
-### macros
+## globals
+
+The container at the bottom of the parsing stack is where created objects (if it's a list) or key-values (if it's a dict) are stored into.
+A token like `@globals` will clear out the parsing stack and push the named global container onto it.  There are only a few globals defined:
+
+## `@options`
+
+Set values at various keys in `@options` to control aspects the JSOM parser.
+
+  - `.debug` (default `false`): set to true for extra debug output.
+  - `.indent` (default `""`): set to one or more spaces to pretty-print the output over multiple lines 
 
 ```
-macros .default-bounds { .min 0 .max 1000 }
-macros .bounds { .min ?min .max ?max }
-macros .inner-bounds < .min ?min .max ?max >
+@options .debug true
+@options .indent "  "
 ```
 
-`macros` is a "global" which pushes the macros dictionary.
-Keys in this dictionary are macro names, and the values are the macro templates.
-Variable values are designated with `?varname`.
+## `@macros`
 
-The macro definition and template are given using the same JSOM syntax.
-Output from JSON converted to JSOM can be copied verbatim into a macro.
+Add items to `@macros` to create new macro definitions.
+The key is the macro name, and the value is the template to be matched or filled.
+The template is given using the same JSOM syntax, so JSOM output can be copied verbatim into a macro.
 
-#### macro parameters
-
-Macro parameters can be given in the definition with `?name` (name is optional; parameters are positional).
-
-```
-.row {
-  .options { .max ?max }
-  .point ?p
-}
-```
-
+Variable values are designated like `?varname`.
 Variables can match any type, including containers.
 
 The entire macro must match completely in order to be emitted by `encode()`.
-No keys can be missing and no extra keys may be present.
+For a full dict, no keys can be missing and no extra keys may be present.
+
+Future (not implemented yet):
+  - Multiple variables with the same `?varname` should match the same value, and should only be passed in the macro args for the first instance.
+  - `?` by itself (no varname) may check for presence only, and would not need to be passed in the macro args at all.
+     - What value would be used when instantiated?  null?
 
 ### macro invocation
 
 A macro can be invoked lisp-style with parens wrapping the macro name and its arguments (which themselves can be values or containers or other nested macros):
 
 ```
-(bounds 5 20)
+@macros .bounds { .min ?min .max ?max }
+@output (bounds 5 20)
+```
+is decoded to:
+
+```
+{"min": 5, "max: 20}
 ```
 
 A macro without arguments can be invoked without the wrapping parens:
 
 ```
-default-bounds
+@macros .default-bounds { .min 0 .max 1000 }
+@output { .bounds default-bounds }
 ```
+
+is decoded to:
+
+```
+{"bounds": {"min": 0, "max": 1000}}
+```
+
+### partial dict
 
 A partial or inner macro, with its template enclosed in `<` and `>`, is like a dict, but applies its key/value pairs to the enclosing dict, instead of opening a new dict:
 
 ```
-{ (inner-bounds 0 100) .val 50 }
+@macros .inner-bounds < .min ?min .max ?max >
+@output { (inner-bounds 0 100) .val 50 }
 ```
 
 is decoded to:
@@ -190,18 +235,3 @@ is decoded to:
 ```
 { "min": 0, "max": 100, "val": 50 }
 ```
-
-
-#### partial macros
-
-With this macro:
-
-```
-.macro.std < .min 0 .max 10000 >
-```
-
-Any dict can include `bigsize` in its definition, and it will acquire the `min` and `max` key/values itself (without creating an inner wrapping dict).
-
-### outer structure
-
-If parsing begins with a `.key` then a dict is returned.  Otherwise, it begins with a value, and a list is returned.
