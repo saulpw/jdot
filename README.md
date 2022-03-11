@@ -95,21 +95,29 @@ python3 setup.py install
 
 ## CLI
 
-The `jsom` command-line utility converts to and from JSOM:
+The `jsom` script (installed as above) converts between JSON and JSOM.
+
+As a quick win, you can easily construct JSON from JSOM on the command line, in many cases without even having to press the Shift key:
 
 ```
-$ jsom .a 3 .b foo   # decode JSOM in args to JSON
-{ "a": 3, "b": "foo" }
+$ jsom .fetch singles .query .city portland .cats .min 1 .max 6
 
-$ echo '{ "a": 3, "b": "foo" }' | jsom  # encode JSON on stdin to JSOM
-.a 3 .b "foo"
-
-$ jsom -e foo.json   # encode: foo.json into JSOM on stdout; effectively json2jsom
-
-$ jsom -d bar.jsom   # decode: bar.jsom into JSON on stdout; effectively jsom2json
+{"fetch": "singles", "query": {"city": "portland", "cats": {"min": 1, "max": 6}}}
 ```
 
-## Library
+Other options:
+- `-d <filename.jsom>` to decode JSOM from a file (or `-` for stdin); outputs JSON to stdout
+- `-e <filename.json>` to encode JSON from a file (or `-` for stdin); outputs JSOM to stdout
+
+These options can be used multiple times and mixed-and-matched.  For example:
+
+```
+jsom -d api-macros.jsom -e api-input.json
+```
+
+This will output the result from `api-macros.jsom` (which should be empty, if it's only defining macros) and then output the result of api-input.json as JSOM, with macros substituted as it finds them.
+
+## Python library
 
 The `jsom` Python library can also be used programmatically:
 

@@ -89,7 +89,7 @@ def deep_del(a: dict, b: dict):
 class JsomCoder:
     def __init__(self, **kwargs):
         self.toktuple = None
-        self.options = dict(debug=False, indent='')
+        self.options = dict(debug=False, indent='', strict=False)
         self.options.update(kwargs)
         self.macros = dict()
         self.globals = dict(macros=self.macros, options=self.options)
@@ -259,8 +259,9 @@ class JsomCoder:
                     try:
                         out = float(tok)
                     except ValueError:
-                        self.error(f"unknown token '{out}'")
-                        out = tok  # pass it through as a string and hope for the best
+                        if self.options['strict']:
+                            self.error(f"unknown token '{out}' (strict mode)")
+                        out = tok  # pass it through as a string to be nice
 
             # add 'out' to the top object
 
