@@ -150,7 +150,8 @@ The `jsom` Python library can also be used programmatically:
 
 - int (`42`)
 - float (`2.71`)
-- string (`"hello"`)
+- string (either `"hello"` or `'world'`)
+   - escape quote/newline/backslash with backslash; embedded newlines allowed
 - bool (`true` or `false`)
 - `null`
 

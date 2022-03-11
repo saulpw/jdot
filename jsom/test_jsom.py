@@ -11,12 +11,20 @@ from jsom import JsomCoder
     '1 1.5 2.5 3.0 0.54',
     '[ 1 1.5 2.5 3.0 0.54 ] [ 2 3 4 ]',
     '{ .i 1 .v "abc" } { .i 2 .v "def" }',
-    # r'[ "a\"bc" ]',
+    '.empty-string ""',
+    '.embedded-opp-quote \'a"b\'',
+    ".escape-quote 'a\"\\'b'",  # embedded doublequote will force single quote delimiter
+    '.escape-backslash "a\\\\"',
+    """.embedded-newline '
+\\\\
+\\'
+"
+\'"""
 ])
 def test_roundtrip(s):
     j = JsomCoder()
     d = j.decode(s)
-    assert j.encode(d) == s, d
+    assert s == j.encode(d), d
 
 
 def test_macro():

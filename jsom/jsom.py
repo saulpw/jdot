@@ -3,6 +3,8 @@
 import sys
 import collections
 
+COMMENT_CHAR = ';'
+
 
 Token = collections.namedtuple('Token', 'type string start end line')
 
@@ -108,42 +110,74 @@ class JsomCoder:
 
     def tokenize(self, s):
         ''
+        escchars = {'n': '\n', '\\': '\\', '\"': '\"'}
+
         startchnum = 0
         tok = ''
-        for linenum, line in enumerate(s.splitlines()):
-            self.debug(f'{linenum}: {line}')
 
-            chnum = 0
-            while chnum < len(line):
-                ch = line[chnum]
-                chnum += 1
+        i = 0  # index into s
+        chnum = 0
+        linenum = 0
+        line = ''
 
-                if ch == ';':  # comment, ignore until end of line
-                    break
-
-                if ch.isspace() or ch in '{}[]()<>"':
-                    if tok:
-                        yield Token('token', tok, (linenum, startchnum), (linenum, chnum), line)
-                        tok = ''
-                        startchnum = chnum
-
-                if ch.isspace():
+        while i < len(s):
+            ch = s[i]
+            i += 1
+            if ch == '\n' or linenum == 0:
+                linenum += 1
+                chnum = 0
+                eol = s.find('\n', i)
+                if eol < 0:
+                    eol = len(s)
+                line = s[i:eol]
+                self.debug(f'{linenum}: {line}')
+                if ch == '\n':
                     continue
 
-                if ch == '"':
-                    j = line.index('"', chnum)
-                    yield Token('str', line[chnum:j], (linenum, chnum), (linenum, j-chnum), line)
-                    chnum = j+1
-                    continue
+            chnum += 1
 
-                if ch in '{}[]()<>':
-                    yield Token(ch, ch, (linenum, chnum), (linenum, chnum+1), line)
-                else:
-                    tok += ch
+            if ch == COMMENT_CHAR:  # comment, ignore until end of line
+                i = eol
+                continue
 
-            if tok:
-                yield Token(tok, tok, (linenum, chnum), (linenum, chnum+1), line)
-                tok = ''
+            if ch.isspace() or ch in '{}[]()<>"':
+                if tok:
+                    yield Token('token', tok, (linenum, startchnum), (linenum, chnum), line)
+                    tok = ''
+                    startchnum = chnum
+
+            if ch.isspace():
+                continue
+
+            if ch in '"\'':
+                startline = linenum
+                startch = chnum
+                string = ''
+                delim = ch
+                while i < len(s):
+                    ch = s[i]
+                    i += 1
+                    if ch == delim:
+                        yield Token('str', string, (startline, startch), (linenum, chnum), line)
+                        break
+                    elif ch == '\\':
+                        string += escchars.get(s[i], s[i])
+                        i += 1
+                    elif ch == '\n':
+                        string += ch
+                        linenum += 1
+                    else:
+                        string += ch
+                continue
+
+            if ch in '{}[]()<>':
+                yield Token(ch, ch, (linenum, chnum), (linenum, chnum+1), line)
+            else:
+                tok += ch
+
+        if tok:
+            yield Token(tok, tok, (linenum, chnum), (linenum, chnum+1), line)
+            tok = ''
 
     def decode(self, s):
         try:
@@ -176,7 +210,10 @@ class JsomCoder:
 
             self.debug(tok, end=' ')
 
-            if tok[0] == '?':  # variable
+            if self.toktuple.type == 'str':  # string literal
+                out = tok
+
+            elif tok[0] == '?':  # variable
                 out = Variable(tok[1:])
 
             elif tok[0] == '@':  # global variable like '@options' and '@macros'
@@ -211,9 +248,6 @@ class JsomCoder:
 
                 key = tok[1:]
                 continue
-
-            elif self.toktuple.type == 'str':  # string literal
-                out = tok
 
             elif tok == '{':  # open dict outer
                 out = dict()
@@ -392,7 +426,19 @@ class JsomCoder:
 
     def literal(self, obj):
         if isinstance(obj, str):
-            return f'"{obj}"'
+            if not obj:
+                return '""'
+
+            delim = "'" if '"' in obj else '"'
+
+            r = ''
+            for ch in obj:
+                if ch in ['\\', delim]:
+                    r += '\\'
+                r += ch
+
+            return delim + r + delim
+
         elif obj is True:
             return 'true'
         elif obj is False:
