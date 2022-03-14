@@ -131,8 +131,6 @@ class JsomCoder:
                     eol = len(s)
                 line = s[i:eol]
                 self.debug(f'{linenum}: {line}')
-                if ch == '\n':
-                    continue
 
             chnum += 1
 
