@@ -349,9 +349,13 @@ class JsomCoder:
         else:
             return v
 
-    def iterencode(self, obj, depth=0, indent=''):
+    def iterencode(self, obj, depth=0, indent='', parent=[]):
         ''
         if isinstance(obj, dict):
+            if not obj:
+                yield '{}'
+                return
+
             # emit first macro, if any match
             innards = []
             for macroname, macro in self.macros.items():
@@ -386,14 +390,7 @@ class JsomCoder:
 
             # if no macro fully applied, emit rest of dictionary
 
-            # first see if it's a one element dict, and emit only the .key
-            if not innards and len(obj) == 1:
-                k, v = list(obj.items())[0]
-                yield f'.{k}'  # without opening {
-                yield from self.iterencode(v, depth=depth+1, indent=indent)
-                return
-
-            if depth > 0:
+            if depth > 0 and len(parent) != 1:
                 yield '{'
 
             yield from innards
@@ -402,11 +399,16 @@ class JsomCoder:
                 if indent and len(obj) > 1:
                     yield '\n' + depth*indent
                 yield f'.{k}'
-                yield from self.iterencode(v, depth=depth+1, indent=indent)
-            if depth > 0:
+                yield from self.iterencode(v, depth=depth+1, indent=indent, parent=obj)
+
+            if depth > 0 and len(parent) != 1:
                 yield '}'
 
         elif isinstance(obj, list):
+            if not obj:
+                yield '[]'
+                return
+
             if depth > 0:
                 yield '['
 
@@ -453,4 +455,4 @@ class JsomCoder:
             args = args[0]
         else:
             args = list(args)
-        return ' '.join(self.iterencode(args, indent=self.options['indent'])).strip()
+        return ' '.join(self.iterencode(args, indent=self.options['indent'], parent=[args])).strip()
