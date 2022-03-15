@@ -41,6 +41,8 @@ def test_roundtrip_dict(d):
     ('@macros .test .a {.k ?v} .c {}', dict(a=dict(k=23), c={}), '(test 23)'),
     ('@macros .test .a {.k ?v } .c {}', dict(a=dict(k=42, j=3), c={}), '.a { .k 42 .j 3 } .c {}'),
     ('@macros .test .a {.k ?v . ?} .c {}', dict(a=dict(k=42, j=3), c={}), '(test 42)'),
+    ('@macros .test .a [{.k ?v . ?}]', dict(a=[dict(k=42, j=3)]), '(test 42)'),
+    ('@macros .test <.a [{.k ?v}]>', dict(a=[dict(k=42), dict(k=23)]), '(test 42) (test 23)'),
 ])
 def test_macro_encode(macros, d, out):
     j = JsomCoder()

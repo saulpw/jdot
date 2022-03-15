@@ -36,7 +36,7 @@ def deep_update(a: dict, b: dict, type=lambda v: v):
         if isinstance(va, dict) and isinstance(vb, dict):
             deep_update(va, vb)
         elif isinstance(va, list):
-            va.extend(vb)
+            va.append(vb)
         else:
             a[k] = type(vb)
     return a
@@ -68,14 +68,17 @@ def deep_match(a, b):
         return ret
 
     elif isinstance(a, list) and isinstance(b, list):
-        ret = []
+        ret = False
         for x in b:
             for y in a:
-                m = deep_match(x, y)
+                m = deep_match(y, x)
                 if m is False:  # each item in `b` must match at least one item in `a`
                     return False
                 if isinstance(m, dict):
-                    deep_update(ret, m, lambda v: [v])
+                    if ret is False:
+                        ret = {}
+                    deep_update(ret, m)  # , lambda v: [v])
+                    break
         return ret
 
     return a == b
@@ -85,14 +88,25 @@ def deep_del(a: dict, b: dict):
     'deep remove contents of *b* from *a*.'
     for k, v in b.items():
         if not k:
-            b.clear()
+            a.clear()
             return
 
         assert k in a, (a, k)
-        if isinstance(v, dict):
+        if isinstance(a[k], dict):
+            assert isinstance(v, dict)
             deep_del(a[k], v)
             if not a[k]:
                 del a[k]
+        elif isinstance(a[k], list):
+            assert isinstance(v, list), v
+            for needle in v:
+                for i, item in enumerate(a[k]):
+                    if deep_match(item, needle) is not False:
+                        deep_del(item, needle)
+                        del a[k][i]
+                        if not a[k]:
+                            del a[k]
+                        break
         else:
             del a[k]
 
@@ -368,9 +382,12 @@ class JsomCoder:
 
             # emit first macro, if any match
             innards = []
-            for macroname, macro in self.macros.items():
+            macros_remaining = list(self.macros.items())
+            while macros_remaining:
+                macroname, macro = macros_remaining[0]
                 m = deep_match(obj, macro)
                 if m is False:  # didn't match
+                    macros_remaining.pop(0)
                     continue
                 if isinstance(m, dict):  # matched with args
                     if m:
