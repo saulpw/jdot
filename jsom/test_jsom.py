@@ -37,6 +37,18 @@ def test_roundtrip_dict(d):
     assert j.decode(r) == d
 
 
+@pytest.mark.parametrize(("macros", "d", "out"), [
+    ('@macros .test .a {.k ?v} .c {}', dict(a=dict(k=23), c={}), '(test 23)'),
+    ('@macros .test .a {.k ?v } .c {}', dict(a=dict(k=42, j=3), c={}), '.a { .k 42 .j 3 } .c {}'),
+    ('@macros .test .a {.k ?v . ?} .c {}', dict(a=dict(k=42, j=3), c={}), '(test 42)'),
+])
+def test_macro_encode(macros, d, out):
+    j = JsomCoder()
+    assert not j.decode(macros)
+    r = j.encode(d)
+    assert r == out
+
+
 def test_macro():
     j = JsomCoder()
     d = j.decode('@macros .foo { .x 2 }')
