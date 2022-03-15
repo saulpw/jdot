@@ -8,6 +8,9 @@ COMMENT_CHAR = ';'
 
 Token = collections.namedtuple('Token', 'type string start end line')
 
+class DecodeException(Exception):
+    pass
+
 
 class Variable:
     def __init__(self, key):
@@ -182,9 +185,11 @@ class JsomCoder:
             objs = self.iterdecode(self.tokenize(s))
         except Exception as e:
             t = self.toktuple
-            print(f'ERROR: {type(e).__name__} {e} at line {t.start[0]+1} (column {t.start[1]})', file=sys.stderr)
-            print(t.line, file=sys.stderr)
-            raise
+            errmsgs = [
+                f'ERROR: {type(e).__name__} {e} at line {t.start[0]+1} (column {t.start[1]})',
+                t.line
+            ]
+            raise DecodeException('\n'.join(errmsgs)) from e
 
         return objs[0] if len(objs) == 1 else objs
 
