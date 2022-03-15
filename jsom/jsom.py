@@ -13,8 +13,8 @@ class DecodeException(Exception):
 
 
 class Variable:
-    def __init__(self, key):
-        '''*key* is key in output dict.'''
+    def __init__(self, key=''):
+        '''*key* is key in output dict, if specified (otherwise matches anything, and is not saved).'''
         self.key = key
 
     def __repr__(self):
@@ -51,10 +51,12 @@ def deep_match(a, b):
 
     elif isinstance(a, dict) and isinstance(b, dict):
         if not isinstance(b, InnerDict):
-            if set(a.keys()) ^ set(b.keys()):
+            keydiffs = set(a.keys()) ^ set(b.keys())
+            if keydiffs and '' not in keydiffs:
                 return False
         ret = {}
         for k, v in b.items():
+            if not k: continue
             if k not in a:  # all `k` in `b` must be in `a` to match
                 return False
             m = deep_match(a[k], v)
@@ -82,6 +84,10 @@ def deep_match(a, b):
 def deep_del(a: dict, b: dict):
     'deep remove contents of *b* from *a*.'
     for k, v in b.items():
+        if not k:
+            b.clear()
+            return
+
         assert k in a, (a, k)
         if isinstance(v, dict):
             deep_del(a[k], v)
@@ -238,6 +244,7 @@ class JsomCoder:
                 print('stack', stack)
                 continue
 
+
             elif tok[0] == '.':  # dict key
                 if isinstance(stack[-1], list):
                     r = dict()           # open new dict by default
@@ -303,7 +310,7 @@ class JsomCoder:
             # add 'out' to the top object
 
             if isinstance(stack[-1], dict):
-                if not key:
+                if key is None:
                     if isinstance(out, InnerDict):
                         deep_update(stack[-1], out)
                     elif isinstance(out, dict):
