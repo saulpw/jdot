@@ -190,7 +190,7 @@ class JsomDecoder:
 
                 out = self.instantiate(self.macros[name], args, name)  # mutates args
                 if args:  # none should be left over
-                    self.error(f'too many args given to "{name}" {args}')
+                    self.error(f'too many args given to "{name}" {args}: {self.macros[name]}')
 
             elif tok == ')':  # end macro arguments
                 break  # exit recurse
@@ -253,14 +253,29 @@ class JsomDecoder:
 
     def instantiate(self, v, args, tmplname):
         ''
+        def ignorable(obj):
+            return isinstance(obj, Variable) and not obj.key
+
         if isinstance(v, InnerDict):
-            return InnerDict({k: self.instantiate(x, args, tmplname) for k, x in v.items()})
+            return InnerDict({
+                k: self.instantiate(x, args, tmplname)
+                for k, x in v.items()
+                if not ignorable(x)
+            })
         elif isinstance(v, dict):
-            return {k: self.instantiate(x, args, tmplname) for k, x in v.items()}
+            return {
+                k: self.instantiate(x, args, tmplname)
+                for k, x in v.items()
+                if not ignorable(x)
+            }
         elif isinstance(v, list):
-            return list(self.instantiate(x, args, tmplname) for x in v)
+            return list(self.instantiate(x, args, tmplname)
+                for x in v
+                if not ignorable(x)
+            )
         elif isinstance(v, Variable):
-            if not args and v.key:
+            assert not ignorable(v)
+            if not args:
                 self.error(f'missing arg "{v.key}" for template "{tmplname}"')
             return args.pop(0)
         else:
