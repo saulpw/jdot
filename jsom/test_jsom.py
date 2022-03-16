@@ -58,8 +58,8 @@ def test_macro():
 
 
 @pytest.mark.parametrize("s", [
-    '; comment',
-    ' ; .a 3 .b 2 "',
+    '# comment',
+    ' # .a 3 .b 2 "',
 ])
 def test_comments(s):
     j = JsomCoder()

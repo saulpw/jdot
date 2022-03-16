@@ -143,7 +143,7 @@ The `jsom` Python library can also be used programmatically:
   - whitespace-separated tokens and quoted strings
   - any whitespace is fine; newlines always possible and never required
     -  no specific indentation is necessary
-  - `;` begins a comment until end of line
+  - `#` begins a comment until end of line
   - `[]{}<>()` are reserved symbols and cannot be part of any other token
 
 ## primitive types

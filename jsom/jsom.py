@@ -3,7 +3,7 @@
 import sys
 import collections
 
-COMMENT_CHAR = ';'
+COMMENT_CHAR = '#'
 
 
 Token = collections.namedtuple('Token', 'type string start end line')
