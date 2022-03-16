@@ -14,12 +14,12 @@ from jsom import JsomCoder
     '.str-number "4"',
     '.empty-string ""',
     '.embedded-opp-quote \'a"b\'',
-    ".escape-quote 'a\"\\'b'",  # embedded doublequote will force single quote delimiter
+    ".escape-quote 'a\"\"\\'b'",  # embedded doublequote will force single quote delimiter
     '.escape-backslash "a\\\\"',
     """.embedded-newline '
 \\\\
 \\'
-"
+" " "
 \'"""
 ])
 def test_roundtrip_jsom(s):

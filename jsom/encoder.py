@@ -97,7 +97,7 @@ class JsomEncoder:
             if not obj:
                 return '""'
 
-            delim = "'" if '"' in obj else '"'
+            delim = "'" if obj.count('"') > obj.count("'") else '"'
 
             r = ''
             for ch in obj:
