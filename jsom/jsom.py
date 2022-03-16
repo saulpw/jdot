@@ -161,7 +161,7 @@ class JsomCoder:
                 i = eol
                 continue
 
-            if ch.isspace() or ch in '{}[]()<>"':
+            if ch.isspace() or ch in '{}[]()<>':
                 if tok:
                     yield Token('token', tok, (linenum, startchnum), (linenum, chnum), line)
                     tok = ''
