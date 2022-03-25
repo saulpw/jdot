@@ -79,7 +79,7 @@ class JsomEncoder:
                 yield '['
 
             for v in obj:
-                yield from self.iterencode(v, depth=depth+1, indent=indent)
+                yield from self.iterencode(v, depth=depth+1, indent=indent, parent=obj)
 
             if depth > 0:
                 yield ']'
