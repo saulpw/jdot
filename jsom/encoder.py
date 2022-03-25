@@ -12,8 +12,11 @@ class JsomEncoder:
             if not isinstance(v, (dict, list))
         }
 
-    def iterencode(self, obj, depth=0, indent='', parent=[]):
+    def iterencode(self, obj, depth=0, indent='', parent=None):
         ''
+        if not parent:
+            parent = [obj]  # length 1 for no outer braces
+
         if isinstance(obj, dict):
             if not obj:
                 yield '{}'
@@ -28,22 +31,20 @@ class JsomEncoder:
                 if m is False:  # didn't match
                     macros_remaining.pop(0)
                     continue
+
                 if isinstance(m, dict):  # matched with args
                     if m:
-                        args = [self.iterencode(x) for x in m.values()]
-                        args = list(x.strip() for y in args for x in y if x.strip())
-                        args = ' '.join(args)
-                        args = args.strip()
-                        r = f'({macroname} {args})'
-                        if isinstance(macro, InnerDict):
-                            innards.append(r)
-                        else:
-                            yield r
+                        macro_invocation = ['(', macroname]
+                        args = [self.iterencode(x, depth=depth+1, parent=[]) for x in m.values()]
+                        macro_invocation.extend(x.strip() for y in args for x in y if x.strip())
+                        macro_invocation.append(')')
                     else:
-                        if isinstance(macro, InnerDict):
-                            innards.append(macroname)
-                        else:
-                            yield macroname
+                        macro_invocation = [macroname]
+
+                    if isinstance(macro, InnerDict):
+                        innards.extend(macro_invocation)
+                    else:
+                        yield from macro_invocation
 
                     if isinstance(macro, InnerDict):
                         deep_del(obj, macro)
@@ -72,7 +73,8 @@ class JsomEncoder:
 
         elif isinstance(obj, list):
             if not obj:
-                yield '[]'
+                yield '['
+                yield ']'
                 return
 
             if depth > 0:
@@ -116,9 +118,66 @@ class JsomEncoder:
         else:
             return f'{obj}'
 
-    def encode(self, *args):
+    def encode(self, *args, formatter=' '.join):
         if len(args) == 1:
             args = args[0]
         else:
             args = list(args)
-        return ' '.join(self.iterencode(args, indent=self.options['indent'], parent=[args])).strip()
+        return formatter(self.iterencode(args))
+
+    def format_better(self, toks):
+        chonks = list(chonker(toks))
+
+        combinefuncs = [
+            (+10, ' ', lambda a, b: a.toks[-1].startswith('.') and b.toks[0].startswith('.')),
+            (+10, ' ', lambda a, b: a.toks[-1].startswith('.')),
+            (+10, '', lambda a, b: b.toks[0] in '}]>)'),
+            (+10, ' ', lambda a, b: len(str(a).strip()) + len(str(b).strip()) < 80 and a.end_level == b.start_level),
+            (-10, '', lambda a, b: a.toks[-1] in '}]>)' and b.toks[0] not in '}]>)'),
+        ]
+
+        i = 0
+        while i < len(chonks)-1:
+            total = 0
+            total_ws = []
+            for amt, ws, f in combinefuncs:
+                r = f(chonks[i], chonks[i+1])
+                if r:
+                    if amt == -10:
+                        total = amt
+                        break
+                    total += amt
+                    total_ws.append(ws)
+
+            if total >= 10:
+                chonks[i].toks.append(total_ws[0])
+                chonks[i].toks.extend(chonks[i+1].toks)
+                chonks[i].end_level = chonks[i+1].end_level
+                del chonks[i+1]
+            else:
+                i += 1
+
+        return '\n'.join(str(x) for x in chonks)
+
+
+def chonker(toks):
+    level = 0
+    for tok in toks:
+        if tok in '[{<(':
+            level += 1
+            yield Chonk(tok, level=level)
+        elif tok in ']}>)':
+            yield Chonk(tok, level=level)
+            level -= 1
+        else:
+            yield Chonk(tok, level=level)
+
+
+class Chonk:
+    def __init__(self, *toks, level=0):
+        self.toks = list(toks)
+        self.start_level = level
+        self.end_level = level
+
+    def __str__(self):
+        return self.start_level*' ' + ''.join(self.toks)

@@ -8,13 +8,6 @@ Remove all the extraneous symbols from JSON, and it becomes a lot easier to read
 
 Conversion between reasonable JSON and JSOM is lossless.
 
-## Table of Contents
-
-- Features
-- Usage
-- Install
-- Format
-  - Macros
 
 ## Features
 
@@ -106,16 +99,19 @@ $ jsom .fetch singles .query .city portland .cats .min 1 .max 6
 ```
 
 Other options:
-- `-d <filename.jsom>` to decode JSOM from a file (or `-` for stdin); outputs JSON to stdout
-- `-e <filename.json>` to encode JSON from a file (or `-` for stdin); outputs JSOM to stdout
+- `-d <filename.jsom>` to decode JSOM from a file (or `-` for stdin); sets output as JSON
+- `-e <filename.json>` to encode JSON from a file (or `-` for stdin); sets output as JSOM
+- `-m` to set output as JSOM
+- `-n` to set output as JSON
 
 These options can be used multiple times and mixed-and-matched.  For example:
 
 ```
-jsom -d api-macros.jsom -e api-input.json
+jsom -d api-macros.jsom -e api-input.json > api-output.jsom
 ```
 
-This will output the result from `api-macros.jsom` (which should be empty, if it's only defining macros) and then output the result of api-input.json as JSOM, with macros substituted as it finds them.
+This will output the result from `api-macros.jsom` (which should no output, if it's only defining macros) and then output the result of api-input.json as JSOM, with macros substituted as it finds them.
+
 
 ## Python library
 
