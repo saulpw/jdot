@@ -128,10 +128,11 @@ class JsomEncoder:
     def format_better(self, toks):
         chonks = list(chonker(toks))
 
-        combinefuncs = [
+        rules = [
             (+10, ' ', lambda a, b: a.toks[-1].startswith('.') and b.toks[0].startswith('.')),
             (+10, ' ', lambda a, b: a.toks[-1].startswith('.')),
             (+10, '', lambda a, b: b.toks[0] in '}]>)'),
+            (+10, '', lambda a, b: a.toks[-1] in '{[<('),
             (+10, ' ', lambda a, b: len(str(a).strip()) + len(str(b).strip()) < 80 and a.end_level == b.start_level),
             (-10, '', lambda a, b: a.toks[-1] in '}]>)' and b.toks[0] not in '}]>)'),
         ]
@@ -140,35 +141,38 @@ class JsomEncoder:
         while i < len(chonks)-1:
             total = 0
             total_ws = []
-            for amt, ws, f in combinefuncs:
+            for rulenum, (amt, ws, f) in enumerate(rules):
                 r = f(chonks[i], chonks[i+1])
                 if r:
-                    if amt == -10:
+                    if amt == -10:  # absolutely not
                         total = amt
                         break
+#                    print(f'rule #{rulenum} fired with "{chonks[i]}" and "{chonks[i+1]}"')
                     total += amt
-                    total_ws.append(ws)
+                    total_ws.append(rulenum)
 
             if total >= 10:
-                chonks[i].toks.append(total_ws[0])
+                _, ws, _ = rules[total_ws[0]]
+                if ws:
+                    chonks[i].toks.append(ws)
                 chonks[i].toks.extend(chonks[i+1].toks)
                 chonks[i].end_level = chonks[i+1].end_level
                 del chonks[i+1]
             else:
                 i += 1
 
-        return '\n'.join(str(x) for x in chonks)
+        return '\n'.join((x.start_level-1)*' '+str(x) for x in chonks)
 
 
 def chonker(toks):
     level = 0
     for tok in toks:
         if tok in '[{<(':
+            yield Chonk(tok, level=level)
             level += 1
-            yield Chonk(tok, level=level)
         elif tok in ']}>)':
-            yield Chonk(tok, level=level)
             level -= 1
+            yield Chonk(tok, level=level)
         else:
             yield Chonk(tok, level=level)
 
@@ -180,4 +184,4 @@ class Chonk:
         self.end_level = level
 
     def __str__(self):
-        return self.start_level*' ' + ''.join(self.toks)
+        return ''.join(self.toks)
