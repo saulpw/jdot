@@ -12,7 +12,7 @@ class JsomEncoder:
             if not isinstance(v, (dict, list))
         }
 
-    def iterencode(self, obj, depth=0, indent='', parent=None):
+    def iterencode(self, obj, depth=0, parent=None):
         ''
         if not parent:
             parent = [obj]  # length 1 for no outer braces
@@ -63,10 +63,8 @@ class JsomEncoder:
             yield from innards
 
             for k, v in sorted(obj.items(), key=len):
-                if indent and len(obj) > 1:
-                    yield '\n' + depth*indent
                 yield f'.{k}'
-                yield from self.iterencode(v, depth=depth+1, indent=indent, parent=obj)
+                yield from self.iterencode(v, depth=depth+1, parent=obj)
 
             if depth > 0 and len(parent) != 1:
                 yield '}'
@@ -81,13 +79,10 @@ class JsomEncoder:
                 yield '['
 
             for v in obj:
-                yield from self.iterencode(v, depth=depth+1, indent=indent, parent=obj)
+                yield from self.iterencode(v, depth=depth+1, parent=obj)
 
             if depth > 0:
                 yield ']'
-
-            if indent:
-                yield '\n' + depth*indent
 
         elif obj in self.revmacros:
             yield self.revmacros[obj]
