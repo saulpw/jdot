@@ -1,9 +1,20 @@
 import collections
+from dataclasses import dataclass
 
 from .jsom import InnerDict, deep_update, Variable
 
 COMMENT_CHAR = '#'
-Token = collections.namedtuple('Token', 'type string start end line')
+
+@dataclass
+class Token:
+    type: str
+    string: str
+    start: tuple[int, int]
+    end: tuple[int, int]
+    line: str
+
+    def __str__(self):
+        return f'{self.string} (line {self.start[0]}, col {self.start[1]})'
 
 
 class DecodeException(Exception):
@@ -14,8 +25,9 @@ class JsomDecoder:
     def error(self, msg):
         t = self.toktuple
         errmsgs = [
-            f'ERROR: {msg} at line {t.start[0]+1} (column {t.start[1]})',
-            t.line
+            f'ERROR: {msg} at line {t.start[0]} (column {t.start[1]})',
+            f'> {t.line}',
+            '  ' + ' '*(t.start[1]-1) + '^',
         ]
         raise DecodeException('\n'.join(errmsgs))
 
@@ -23,11 +35,11 @@ class JsomDecoder:
         ''
         escchars = {'n': '\n', '\\': '\\', '\"': '\"'}
 
-        startchnum = 0
+        startchnum = 1
         tok = ''
 
         i = 0  # index into s
-        chnum = 0
+        chnum = 1
         linenum = 0
         line = ''
 
@@ -36,11 +48,11 @@ class JsomDecoder:
             i += 1
             if ch == '\n' or linenum == 0:
                 linenum += 1
-                chnum = 0
+                chnum = 1
                 eol = s.find('\n', i)
                 if eol < 0:
                     eol = len(s)
-                line = s[i:eol]
+                line = s[i-1:eol]
                 self.debug(f'{linenum}: {line}')
 
             chnum += 1
@@ -53,21 +65,21 @@ class JsomDecoder:
                 if tok:
                     yield Token('token', tok, (linenum, startchnum), (linenum, chnum), line)
                     tok = ''
-                    startchnum = chnum
+                startchnum = chnum
 
             if ch.isspace():
                 continue
 
             if ch in '"\'':
                 startline = linenum
-                startch = chnum
                 string = ''
                 delim = ch
                 while i < len(s):
                     ch = s[i]
                     i += 1
+                    chnum += 1
                     if ch == delim:
-                        yield Token('str', string, (startline, startch), (linenum, chnum), line)
+                        yield Token('str', string, (startline, startchnum), (linenum, chnum), line)
                         break
                     elif ch == '\\':
                         string += escchars.get(s[i], s[i])
@@ -75,17 +87,19 @@ class JsomDecoder:
                     elif ch == '\n':
                         string += ch
                         linenum += 1
+                        chnum = 1
                     else:
                         string += ch
+                startchnum = chnum
                 continue
 
             if ch in '{}[]()<>':
-                yield Token(ch, ch, (linenum, chnum), (linenum, chnum+1), line)
+                yield Token(ch, ch, (linenum, chnum-1), (linenum, chnum), line)
             else:
                 tok += ch
 
         if tok:
-            yield Token(tok, tok, (linenum, chnum), (linenum, chnum+1), line)
+            yield Token(tok, tok, (linenum, chnum-1), (linenum, chnum), line)
             tok = ''
 
     def decode(self, s):
