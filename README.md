@@ -240,3 +240,9 @@ is decoded to:
 ```
 { "min": 0, "max": 100, "val": 50 }
 ```
+
+# Copyright and License
+
+Copyright 2022 Saul Pwanson
+
+Licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
