@@ -2,6 +2,16 @@ import pytest
 
 from jsom import JsomCoder
 
+@pytest.mark.parametrize(("s", "out"), [
+#    ('.a .b 2 .c 3', dict(a=dict(b=2, c=3)))
+    ('.a { .b .c 3 .d 4 }', dict(a=dict(b=dict(c=3), d=4))),
+    ('.a .b {} .c {}', dict(a=dict(b=dict()), c={}))
+])
+def test_decode(s, out):
+    j = JsomCoder()
+    d = j.decode(s)
+    assert d == out, d
+
 
 @pytest.mark.parametrize("s", [
     '.a 1 .b 2',
@@ -34,21 +44,21 @@ def test_roundtrip_jsom(s):
 def test_roundtrip_dict(d):
     j = JsomCoder()
     r = j.encode(d)
-    assert j.decode(r) == d
+    assert j.decode(r) == d, r
 
 
 @pytest.mark.parametrize(("macros", "d", "out"), [
-    ('@macros .test .a {.k ?v} .c {}', dict(a=dict(k=23), c={}), '( test 23 )'),
-    ('@macros .test .a {.k ?v } .c {}', dict(a=dict(k=42, j=3), c={}), '.a { .k 42 .j 3 } .c {}'),
-    ('@macros .test .a {.k ?v . ?} .c {}', dict(a=dict(k=42, j=3), c={}), '( test 42 )'),
-    ('@macros .test .a [{.k ?v . ?}]', dict(a=[dict(k=42, j=3)]), '( test 42 )'),
+    ('@macros .test { .a {.k ?v} .c {} }', dict(a=dict(k=23), c={}), '( test 23 )'),
+    ('@macros .test { .a {.k ?v } .c {} }', dict(a=dict(k=42, j=3), c={}), '.a { .k 42 .j 3 } .c {}'),
+    ('@macros .test { .a {.k ?v . ?} .c {} }', dict(a=dict(k=42, j=3), c={}), '( test 42 )'),
+    ('@macros .test { .a [{.k ?v . ?}] }', dict(a=[dict(k=42, j=3)]), '( test 42 )'),
     ('@macros .test <.a [{.k ?v}]>', dict(a=[dict(k=42), dict(k=23)]), '( test 42 ) ( test 23 )'),
 ])
 def test_macro_encode(macros, d, out):
     j = JsomCoder()
     assert not j.decode(macros)
     r = j.encode(d)
-    assert r == out
+    assert r == out, j.globals['macros']
 
 
 def test_macro():
@@ -70,7 +80,7 @@ def test_comments(s):
 @pytest.mark.parametrize(("s", "out"), [
     ('@macros .foo .a ?a @output .outer ( foo 4 )', '.outer .a 4'),
 ])
-def test_decode(s, out):
+def test_decode_reencode(s, out):
     j = JsomCoder()
     d = j.decode(s)
     assert out == JsomCoder().encode(d)  # un-macroed

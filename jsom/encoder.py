@@ -57,7 +57,7 @@ class JsomEncoder:
 
             # if no macro fully applied, emit rest of dictionary
 
-            if depth > 0 and len(parent) != 1:
+            if depth > 0 and len(obj) != 1:
                 yield '{'
 
             yield from innards
@@ -66,7 +66,7 @@ class JsomEncoder:
                 yield f'.{k}'
                 yield from self.iterencode(v, depth=depth+1, parent=obj)
 
-            if depth > 0 and len(parent) != 1:
+            if depth > 0 and len(obj) != 1:
                 yield '}'
 
         elif isinstance(obj, list):

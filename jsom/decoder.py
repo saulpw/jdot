@@ -98,6 +98,7 @@ class JsomDecoder:
         key = None
         ret = []  # root list to return
         stack = [ret]  # path from root
+        curr = ret
         self.globals['output'] = ret  # make available as '@output'
 
         while True:
@@ -106,8 +107,8 @@ class JsomDecoder:
             except StopIteration:
                 break
 
-            out = None
-            append_stack = False
+            out = None  # value to set at current key or append to list
+            append_stack = False  # append curr to stack after setting key value
             tok = self.toktuple.string
 
             self.debug(tok, end=' ')
@@ -124,7 +125,8 @@ class JsomDecoder:
                     self.error(f'no such global {name}')
 
                 self.debug(f'global {tok}')
-                stack = [self.globals[name]]
+                curr = self.globals[name]
+                stack = [curr]
                 self.restart()
                 continue
 
@@ -139,15 +141,16 @@ class JsomDecoder:
 
 
             elif tok[0] == '.':  # dict key
-                if isinstance(stack[-1], list):
-                    r = dict()           # open new dict by default
-                    stack[-1].append(r)  # append it to the list
-                    stack[-1] = r        # and replace the list with it
-                elif key is not None:  # two keys in a row: parent dict has only one element (us)
-                    r = dict()
-                    old = stack.pop()
-                    old[key] = r
+                if isinstance(curr, list):
+                    r = dict()     # open new dict by default
+                    curr.append(r)  # append it to the list
+                    curr = r        # and replace the list with it
                     stack.append(r)
+                elif key is not None:  # two keys in a row: parent dict has only one element (us)
+                    # change curr without pushing
+                    r = dict()
+                    curr[key] = r
+                    curr = r
 
                 key = tok[1:]
                 continue
@@ -165,21 +168,24 @@ class JsomDecoder:
                 append_stack = True
 
             elif tok == '}':  # close dict outer
-                r = stack.pop()
-                if not isinstance(r, dict):
+                if not isinstance(curr, dict):
                     self.error('mismatched closing }')
+                stack.pop()
+                curr = stack[-1]
                 continue
 
             elif tok == ']':  # close list
-                r = stack.pop()
-                if not isinstance(r, list):
+                if not isinstance(curr, list):
                     self.error('mismatched closing ]')
+                stack.pop()
+                curr = stack[-1]
                 continue
 
             elif tok == '>':  # close dict inner
-                r = stack.pop()
-                if not isinstance(r, InnerDict):
+                if not isinstance(curr, InnerDict):
                     self.error('mismatched closing >')
+                stack.pop()
+                curr = stack[-1]
                 continue
 
             elif tok == '(':  # open macro, instantiate with args
@@ -216,18 +222,18 @@ class JsomDecoder:
 
             # add 'out' to the top object
 
-            if isinstance(stack[-1], dict):
+            if isinstance(curr, dict):
                 if key is None:
                     if isinstance(out, InnerDict):
-                        deep_update(stack[-1], out)
+                        deep_update(curr, out)
                     elif isinstance(out, dict):
-                        deep_update(stack[-1], out)
+                        deep_update(curr, out)
 #                        # leave old dict there, to be filled in with the 'new' dicts inners
                     else:
                         self.error(f'no key given for value {self.literal(out)}')
                 else:
-                    if key in stack[-1]:
-                        oldval = stack[-1][key]
+                    if key in curr:
+                        oldval = curr[key]
                         if not isinstance(oldval, type(out)):
                             self.error(f'{key} has existing {type(oldval)} value')
                         if isinstance(out, dict):
@@ -235,19 +241,21 @@ class JsomDecoder:
                         elif isinstance(out, list):
                             oldval.append(out)
                         else:
-                            stack[-1][key] = out
+                            curr[key] = out
                     else:
-                        stack[-1][key] = out
+                        curr[key] = out
+                        curr = stack[-1]
                     key = None
 
-            elif isinstance(stack[-1], list):
-                stack[-1].append(out)
+            elif isinstance(curr, list):
+                curr.append(out)
 
             else:
                 self.error('non-container on top-of-stack')
 
             if append_stack:
                 stack.append(out)
+                curr = out
 
         return ret
 
