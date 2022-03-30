@@ -7,7 +7,7 @@ from jsom import JsomCoder
 
 
 def json2jsom(s):
-    j = JsomCoder(indent=' ')
+    j = JsomCoder()
     d = json.loads(s)
     s = j.encode(d)
     return '\n'.join(line.rstrip() for line in s.splitlines())
@@ -19,7 +19,7 @@ class JsonDefaultEncoder(json.JSONEncoder):
 
 
 def jsom2json(s):
-    j = JsomCoder(indent=' ')
+    j = JsomCoder()
     d = j.decode(s)
     return json.dumps(d, cls=JsonDefaultEncoder)
 
@@ -34,7 +34,7 @@ def main():
     i = 1
     jsomargs = []
     objs = []
-    j = JsomCoder(indent=' ')
+    j = JsomCoder()
     while i < len(sys.argv):
         arg = sys.argv[i]
         i += 1

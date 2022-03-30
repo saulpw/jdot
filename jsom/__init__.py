@@ -10,7 +10,7 @@ class JsomCoder(JsomEncoder, JsomDecoder):
     def __init__(self, **kwargs):
         super().__init__()
         self.toktuple = None
-        self.options = dict(debug=False, indent='', strict=False)
+        self.options = dict(debug=False, strict=False)
         self.options.update(kwargs)
         self.macros = dict()
         self.globals = dict(macros=self.macros, options=self.options)

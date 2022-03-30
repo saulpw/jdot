@@ -93,7 +93,7 @@ The `jsom` script (installed as above) converts between JSON and JSOM.
 As a quick win, you can easily construct JSON from JSOM on the command line, in many cases without even having to press the Shift key:
 
 ```
-$ jsom .fetch singles .query .city portland .cats .min 1 .max 6
+$ jsom '.fetch singles .query { .city portland .cats { .min 1 .max 6 } }'
 
 {"fetch": "singles", "query": {"city": "portland", "cats": {"min": 1, "max": 6}}}
 ```
@@ -140,7 +140,7 @@ The `jsom` Python library can also be used programmatically:
   - any whitespace is fine; newlines always possible and never required
     -  no specific indentation is necessary
   - `#` begins a comment until end of line
-  - `[]{}<>()` are reserved symbols and cannot be part of any other token
+  - `[]{}<>()` are reserved symbols and will not be part of any other token
 
 ## primitive types
 
@@ -162,8 +162,8 @@ The `jsom` Python library can also be used programmatically:
   - `{ .key "value" .key2 3.14 }` => `{ "key": "value", "key2": 3.14 }`
   - `{ .outer .inner { ... } }` => `{ "outer": { "inner": { ... } } }`
      - the outer key is automatically closed after the inner value finishes; `inner` is the only element in `outer`
-    - string in double quotes, standard escape with `\\`
-  - key must be reasonable: no spaces or leading symbols that have meaning in JSOM
+     - after setting a value, the next .key will be inserted in the most recently opened dict
+  - key must be reasonable: no spaces or symbols that have meaning in JSOM
 
 ## globals
 
@@ -174,12 +174,12 @@ A token like `@globals` will clear out the parsing stack and push the named glob
 
 Set values at various keys in `@options` to control aspects the JSOM parser.
 
-  - `.debug` (default `false`): set to true for extra debug output.
-  - `.indent` (default `""`): set to one or more spaces to pretty-print the output over multiple lines 
+  - `.debug` (default `false`): set to `true` for extra debug output.
+  - `.strict` (default `false`): set to `true` to error on unknown token (otherwise implicit conversion to string)
 
+For example:
 ```
 @options .debug true
-@options .indent "  "
 ```
 
 ## `@macros`
