@@ -12,11 +12,8 @@ class JsomEncoder:
             if not isinstance(v, (dict, list))
         }
 
-    def iterencode(self, obj, depth=0, parent=None):
+    def iterencode(self, obj, depth=0):
         ''
-        if not parent:
-            parent = [obj]  # length 1 for no outer braces
-
         if isinstance(obj, dict):
             if not obj:
                 yield '{}'
@@ -35,7 +32,7 @@ class JsomEncoder:
                 if isinstance(m, dict):  # matched with args
                     if m:
                         macro_invocation = ['(', macroname]
-                        args = [self.iterencode(x, depth=depth+1, parent=[]) for x in m.values()]
+                        args = [self.iterencode(x, depth=depth+1) for x in m.values()]
                         macro_invocation.extend(x.strip() for y in args for x in y if x.strip())
                         macro_invocation.append(')')
                     else:
@@ -64,7 +61,7 @@ class JsomEncoder:
 
             for k, v in sorted(obj.items(), key=len):
                 yield f'.{k}'
-                yield from self.iterencode(v, depth=depth+1, parent=obj)
+                yield from self.iterencode(v, depth=depth+1)
 
             if depth > 0 and len(obj) != 1:
                 yield '}'
@@ -79,7 +76,7 @@ class JsomEncoder:
                 yield '['
 
             for v in obj:
-                yield from self.iterencode(v, depth=depth+1, parent=obj)
+                yield from self.iterencode(v, depth=depth+1)
 
             if depth > 0:
                 yield ']'
