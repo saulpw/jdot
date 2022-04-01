@@ -30,11 +30,21 @@ def read_arg(fn):
     return open(fn).read()
 
 
+def iterobjs(d):
+    if d is None:
+        return
+    elif isinstance(d, list):
+        yield from d
+    else:
+        yield d
+
+
 def main():
     i = 1
     jsomargs = []
     objs = []
     j = JsomCoder()
+
     while i < len(sys.argv):
         arg = sys.argv[i]
         i += 1
@@ -44,7 +54,7 @@ def main():
         if arg in ['-d', '--in-jsom']:
             contents = read_arg(sys.argv[i])
             d = j.decode(contents)
-            objs.extend(d)
+            objs.extend(iterobjs(d))
 
             out_json = True
             i += 1
@@ -52,10 +62,7 @@ def main():
         elif arg in ['-e', '-n', '--in-json']:
             contents = read_arg(sys.argv[i])
             d = json.loads(contents)
-            if isinstance(d, list):
-                objs.extend(d)
-            else:
-                objs.append(d)
+            objs.extend(iterobjs(d))
 
             out_json = False
             i += 1
@@ -66,20 +73,17 @@ def main():
         elif arg in ['-m', '--out-jsom']:  # encode
             out_json = False
 
+        elif arg in ['--debug']:
+            j.options['debug'] = True
+
         else:
             jsomargs.append(arg)
 
     if jsomargs:
         d = j.decode(' '.join(jsomargs))
-        if isinstance(d, list):
-            objs.extend(d)
-        else:
-            objs.append(d)
+        objs.extend(iterobjs(d))
 
     if objs:
-        if len(objs) == 1:
-            objs = objs[0]
-
         if out_json:
             print(json.dumps(objs, cls=JsonDefaultEncoder))
         else:

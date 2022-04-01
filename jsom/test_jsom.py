@@ -3,14 +3,15 @@ import pytest
 from jsom import JsomCoder
 
 @pytest.mark.parametrize(("s", "out"), [
-#    ('.a .b 2 .c 3', dict(a=dict(b=2, c=3)))
     ('.a { .b .c 3 .d 4 }', dict(a=dict(b=dict(c=3), d=4))),
-    ('.a .b {} .c {}', dict(a=dict(b=dict()), c={}))
+    ('.a .b {} .c {}', dict(a=dict(b=dict()), c={})),
+    ('{ .a .b {} .c {} }', [dict(a=dict(b=dict()), c={})]),
+    ('{.f 1 } { .g 2 }', [dict(f=1), dict(g=2)]),
 ])
 def test_decode(s, out):
     j = JsomCoder()
     d = j.decode(s)
-    assert d == out, d
+    assert d == out
 
 
 @pytest.mark.parametrize("s", [
@@ -21,6 +22,7 @@ def test_decode(s, out):
     '1 1.5 2.5 3.0 0.54',
     '[ 1 1.5 2.5 3.0 0.54 ] [ 2 3 4 ]',
     '{ .i 1 .v "abc" } { .i 2 .v "def" }',
+    '.a [ .f 1 .g 2 ]',
     '.str-number "4"',
     '.empty-string ""',
     '.embedded-opp-quote \'a"b\'',
@@ -35,16 +37,20 @@ def test_decode(s, out):
 def test_roundtrip_jsom(s):
     j = JsomCoder()
     d = j.decode(s)
-    assert s == j.encode(d), d
+    assert s == j.encode_oneliner(d)
 
 
-@pytest.mark.parametrize("d", [
-    dict(a=dict(b={}), c={})
+@pytest.mark.parametrize(("obj", "enc"), [
+    (dict(a=dict(b={}), c={}), '.a .b {} .c {}'),
+    ({"f": 1, "g": 2}, '.f 1 .g 2'),  # a) must be the case
+    ([{"f": 1, "g": 2}, {"f": 3, "g": 4}], '{ .f 1 .g 2 } { .f 3 .g 4 }'), # b) makes sense
+    ([{"f": 1, "g": 2}], '{ .f 1 .g 2 }'),  # c) follows from above
 ])
-def test_roundtrip_dict(d):
+def test_roundtrip_dict(obj, enc):
     j = JsomCoder()
-    r = j.encode(d)
-    assert j.decode(r) == d, r
+    r = j.encode_oneliner(obj)
+    assert r == enc
+    assert j.decode(r) == obj, r
 
 
 @pytest.mark.parametrize(("macros", "d", "out"), [
@@ -57,7 +63,7 @@ def test_roundtrip_dict(d):
 def test_macro_encode(macros, d, out):
     j = JsomCoder()
     assert not j.decode(macros)
-    r = j.encode(d)
+    r = j.encode_oneliner(d)
     assert r == out, j.globals['macros']
 
 
@@ -83,6 +89,6 @@ def test_comments(s):
 def test_decode_reencode(s, out):
     j = JsomCoder()
     d = j.decode(s)
-    assert out == JsomCoder().encode(d)  # un-macroed
-    macrodefs = JsomCoder().encode(j.globals['macros'])
-    assert ' '.join(['@macros', macrodefs, '@output', j.encode(d)]) == s  # re-macroed
+    assert out == JsomCoder().encode_oneliner(d)  # un-macroed
+    macrodefs = JsomCoder().encode_oneliner(j.globals['macros'])
+    assert ' '.join(['@macros', macrodefs, '@output', j.encode_oneliner(d)]) == s  # re-macroed

@@ -22,13 +22,15 @@ class DecodeException(Exception):
 
 
 class JsomDecoder:
-    def error(self, msg):
+    def error(self, msg, **kwargs):
         t = self.toktuple
         errmsgs = [
             f'ERROR: {msg} at line {t.start[0]} (column {t.start[1]})',
             f'> {t.line}',
             '  ' + ' '*(t.start[1]-1) + '^',
         ]
+        for k, v in kwargs.items():
+            errmsgs.append(f'{k}={v}')
         raise DecodeException('\n'.join(errmsgs))
 
     def tokenize(self, s):
@@ -53,7 +55,7 @@ class JsomDecoder:
                 if eol < 0:
                     eol = len(s)
                 line = s[i-1:eol]
-                self.debug(f'{linenum}: {line}')
+                self.debug(f'{linenum}: {line.strip()}')
 
             chnum += 1
 
@@ -103,17 +105,16 @@ class JsomDecoder:
             tok = ''
 
     def decode(self, s):
-        objs = self.iterdecode(self.tokenize(s))
-        return objs[0] if len(objs) == 1 else objs
+        return self.iterdecode(self.tokenize(s))
 
     def iterdecode(self, it):
         '*it* can be str or generator of Token.  Return list of parsed objects.'
 
         key = None
-        ret = []  # root list to return
-        stack = [ret]  # path from root
-        curr = ret
-        self.globals['output'] = ret  # make available as '@output'
+        ret = None  # root list to return
+        stack = []  # path from root
+        curr = None
+        self.globals['output'] = None  # make available as '@output'
 
         while True:
             try:
@@ -125,7 +126,7 @@ class JsomDecoder:
             append_stack = False  # append curr to stack after setting key value
             tok = self.toktuple.string
 
-            self.debug(tok, end=' ')
+            self.debug(stack, curr, self.toktuple)
 
             if self.toktuple.type == 'str':  # string literal
                 out = tok
@@ -155,11 +156,15 @@ class JsomDecoder:
 
 
             elif tok[0] == '.':  # dict key
+                if curr is None:
+                    assert not self.globals['output']
+                    ret = curr = self.globals['output'] = dict()
+                    stack.append(curr)
+
                 if isinstance(curr, list):
                     r = dict()     # open new dict by default
                     curr.append(r)  # append it to the list
                     curr = r        # and replace the list with it
-                    stack.append(r)
                 elif key is not None:  # two keys in a row: parent dict has only one element (us)
                     # change curr without pushing
                     r = dict()
@@ -185,21 +190,21 @@ class JsomDecoder:
                 if not isinstance(curr, dict):
                     self.error('mismatched closing }')
                 stack.pop()
-                curr = stack[-1]
+                curr = stack[-1] if stack else None
                 continue
 
             elif tok == ']':  # close list
-                if not isinstance(curr, list):
-                    self.error('mismatched closing ]')
                 stack.pop()
-                curr = stack[-1]
+                if not isinstance(curr, list) and not isinstance(stack[-1], list):
+                    self.error('mismatched closing ]')
+                curr = stack[-1] if stack else None
                 continue
 
             elif tok == '>':  # close dict inner
                 if not isinstance(curr, InnerDict):
                     self.error('mismatched closing >')
                 stack.pop()
-                curr = stack[-1]
+                curr = stack[-1] if stack else None
                 continue
 
             elif tok == '(':  # open macro, instantiate with args
@@ -236,13 +241,20 @@ class JsomDecoder:
 
             # add 'out' to the top object
 
+            if curr is None:
+                assert ret is None
+                assert not stack
+                assert not self.globals['output']
+                ret = curr = self.globals['output'] = list()
+                stack.append(curr)
+
             if isinstance(curr, dict):
                 if key is None:
                     if isinstance(out, InnerDict):
                         deep_update(curr, out)
                     elif isinstance(out, dict):
                         deep_update(curr, out)
-#                        # leave old dict there, to be filled in with the 'new' dicts inners
+                        # leave old dict there, to be filled in with the 'new' dicts inners
                     else:
                         self.error(f'no key given for value {self.literal(out)}')
                 else:
@@ -256,16 +268,17 @@ class JsomDecoder:
                             oldval.append(out)
                         else:
                             curr[key] = out
+                            curr = None
                     else:
                         curr[key] = out
-                        curr = stack[-1]
+                        curr = stack[-1] if stack else None
                     key = None
 
             elif isinstance(curr, list):
                 curr.append(out)
 
             else:
-                self.error('non-container on top-of-stack')
+                self.error(f'non-container type {type(curr)} is current')
 
             if append_stack:
                 stack.append(out)

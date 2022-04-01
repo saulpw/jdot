@@ -93,10 +93,12 @@ The `jsom` script (installed as above) converts between JSON and JSOM.
 As a quick win, you can easily construct JSON from JSOM on the command line, in many cases without even having to press the Shift key:
 
 ```
-$ jsom '.fetch singles .query { .city portland .cats { .min 1 .max 6 } }'
+$ jsom '.fetch singles .query { .city portland .cats { .min 1 .max 6'
 
 {"fetch": "singles", "query": {"city": "portland", "cats": {"min": 1, "max": 6}}}
 ```
+
+(Note that the final closing braces may be omitted unless the `strict` option is set to true.)
 
 Other options:
 - `-d <filename.jsom>` to decode JSOM from a file (or `-` for stdin); sets output as JSON
@@ -110,7 +112,7 @@ These options can be used multiple times and mixed-and-matched.  For example:
 jsom -d api-macros.jsom -e api-input.json > api-output.jsom
 ```
 
-This will output the result from `api-macros.jsom` (which should no output, if it's only defining macros) and then output the result of api-input.json as JSOM, with macros substituted as it finds them.
+This will output the result from `api-macros.jsom` (which should not output anything, if it's only defining macros) and then output the result of `api-input.json` as JSOM, with macros substituted as it finds them.
 
 
 ## Python library
@@ -162,7 +164,7 @@ The `jsom` Python library can also be used programmatically:
   - `{ .key "value" .key2 3.14 }` => `{ "key": "value", "key2": 3.14 }`
   - `{ .outer .inner { ... } }` => `{ "outer": { "inner": { ... } } }`
      - the outer key is automatically closed after the inner value finishes; `inner` is the only element in `outer`
-     - after setting a value, the next .key will be inserted in the most recently opened dict
+     - after setting a value, the next `.key` will be inserted into the most recently opened dict
   - key must be reasonable: no spaces or symbols that have meaning in JSOM
 
 ## globals
@@ -179,7 +181,7 @@ Set values at various keys in `@options` to control aspects the JSOM parser.
 
 For example:
 ```
-@options .debug true
+@options .strict true
 ```
 
 ## `@macros`
@@ -193,11 +195,6 @@ Variables can match any type, including containers.
 
 The entire macro must match completely in order to be emitted by `encode()`.
 For a full dict, no keys can be missing and no extra keys may be present.
-
-Future (not implemented yet):
-  - Multiple variables with the same `?varname` should match the same value, and should only be passed in the macro args for the first instance.
-  - `?` by itself (no varname) may check for presence only, and would not need to be passed in the macro args at all.
-     - What value would be used when instantiated?  null?
 
 ### macro invocation
 
@@ -240,6 +237,65 @@ is decoded to:
 ```
 { "min": 0, "max": 100, "val": 50 }
 ```
+
+# BNF
+
+```
+id := [A-z_][A-z_0-9]*
+
+string-literal := dquote string-char* dquote
+                | squote string-char* squote
+
+string-char := '\' esc-char
+             | unicode-char  // including newlines
+
+esc-char := '\'
+          | 'n'
+          | squote
+          | dquote
+
+bool-literal := 'true' | 'false'
+
+Value := 'null'
+      | bool-literal
+      | string-literal
+      | int-literal
+      | float-literal
+      | '[' InnerList ']'
+      | '{' InnerDict '}'
+      | '<' InnerDict '>'
+      | List
+      | Dict
+      | PartialDict
+      | Variable  // only useful within a macro
+      | Macro
+
+InnerList := Value*
+InnerDict := KeyValue*
+
+Key := '.' id
+     | '.' string-literal
+     | '.'                // matches any key
+
+Variable := '?' id
+          | '?'    // ignore contents
+
+Macro := '(' id InnerList ')'
+       | id     // instantiate macro without args
+
+SectionName := '@' id  // can be 'options' or 'macros' or 'output'
+         | '@'     // 'output'
+
+Top := SectionName InnerDict
+         | InnerList
+         | InnerDict
+
+Jsom := Top+
+```
+
+# Future ideas (not implemented yet)
+  - multiple variables with the same `?varname` should match the same value, and should only be passed in the macro args once.
+  - macro invocation with named arguments: `(foo .arg1 42 .arg2 "bar")`
 
 # Copyright and License
 

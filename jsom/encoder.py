@@ -12,8 +12,11 @@ class JsomEncoder:
             if not isinstance(v, (dict, list))
         }
 
-    def iterencode(self, obj, depth=0):
+    def iterencode(self, obj, depth=0, parents=None):
         ''
+        if parents is None:
+            parents = []
+
         if isinstance(obj, dict):
             if not obj:
                 yield '{}'
@@ -54,19 +57,25 @@ class JsomEncoder:
 
             # if no macro fully applied, emit rest of dictionary
 
-            if depth > 0 and len(obj) != 1:
+            show_braces = True
+            if depth == 0:
+                show_braces = False
+            elif len(obj) == 1 and not (depth == 1 and isinstance(parents[-1], list)):
+                show_braces = False
+
+            if show_braces:
                 yield '{'
 
             yield from innards
 
-            for k, v in sorted(obj.items(), key=len):
+            for k, v in obj.items():
                 yield f'.{k}'
-                yield from self.iterencode(v, depth=depth+1)
+                yield from self.iterencode(v, depth=depth+1, parents=parents+[obj])
 
-            if depth > 0 and len(obj) != 1:
+            if show_braces:
                 yield '}'
 
-        elif isinstance(obj, list):
+        elif isinstance(obj, (list, tuple)):
             if not obj:
                 yield '['
                 yield ']'
@@ -76,7 +85,7 @@ class JsomEncoder:
                 yield '['
 
             for v in obj:
-                yield from self.iterencode(v, depth=depth+1)
+                yield from self.iterencode(v, depth=depth+1, parents=parents+[obj])
 
             if depth > 0:
                 yield ']'
@@ -110,12 +119,13 @@ class JsomEncoder:
         else:
             return f'{obj}'
 
-    def encode(self, *args, formatter=' '.join):
-        if len(args) == 1:
-            args = args[0]
-        else:
-            args = list(args)
-        return formatter(self.iterencode(args))
+    def encode_oneliner(self, obj):
+        return self.encode(obj, formatter=' '.join)
+
+    def encode(self, obj, formatter=None):
+        if not formatter:
+            formatter = self.format_better
+        return formatter(self.iterencode(obj))
 
     def format_better(self, toks):
         chonks = list(chonker(toks))
