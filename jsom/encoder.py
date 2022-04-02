@@ -135,7 +135,7 @@ class JsomEncoder:
             (+10, ' ', lambda a, b: a.toks[-1].startswith('.')),
             (+10, '', lambda a, b: b.toks[0] in '}]>)'),
             (+10, '', lambda a, b: a.toks[-1] in '{[<('),
-            (+10, ' ', lambda a, b: len(str(a).strip()) + len(str(b).strip()) < 80 and a.end_level == b.start_level),
+            (+10, ' ', lambda a, b: len(str(a).strip()) + len(str(b).strip()) < self.options.get('maxwidth', 80) and a.end_level == b.start_level),
             (-10, '', lambda a, b: a.toks[-1] in '}]>)' and b.toks[0] not in '}]>)'),
         ]
 
