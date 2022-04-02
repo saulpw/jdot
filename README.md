@@ -146,6 +146,8 @@ gh api repos/saulpw/visidata/issues > visidata-issues.json
 ```
 
 Now you can browse this JSON using [jq] or [VisiData] or just plain [cat]:
+
+```
 [
   {
     "url": "https://api.github.com/repos/saulpw/visidata/issues/1328",
