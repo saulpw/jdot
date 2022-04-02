@@ -145,7 +145,7 @@ This command from [`github-cli`]() uses the Github API to download the list of i
 gh api repos/saulpw/visidata/issues > visidata-issues.json
 ```
 
-Now you can browse this JSON using [jq] or [VisiData] or just plain [cat]:
+Now you can browse this JSON using [jq](https://stedolan.github.io/jq/) or [VisiData](https://visidata.org) or just plain [cat](https://www.unix.com/man-page/posix/1posix/cat/):
 
 ```
 [
@@ -214,28 +214,18 @@ $ jsom -d ghapi-macros.jsom -e visidata-issues.json > visidata-issues.jsom
   "[selection expansion] Expand current selection with a comma command that expands all matching selection.")
 (issue 1324 "Make it possible to 'just open' a gpkg [sqlite] ")
 (issue 1319 "Input mysteriously stopped working")
-(issue 1317
-  "[bug Python3.9] \"AttributeError: 'LazyChainMap' object has no attribute 'get'\" when entering pdb++ breakpoint.")
-(issue 1308 "[html rowspan] Rowspan is not handled.")
-(issue 1307 "[col height] New vertical max-resize-col command")
-(issue 1303 "[v2.9dev] Ctrl-Y fails to open a sheet larger than 1x1")
-(issue 1301
-  "[learnability] Add a status message teaching commit on Deferred Sheet ")
-(issue 1299 "[v2.9dev] unknown aggregator accepted in columns-sheet")
-(issue 1298
-  '[Windows] Error msg: "the procedure entry point ... could not be located"')
-(issue 1291 "python-dateutil should not be needed to run VisiData")
-(issue 1265 "Revert default VisiData behaviour to choose saver from extension")
-(issue 1259 "Menus not rendering as expected on iTerm2")
-...
 ```
 
 And so this is the list of open issue ids and titles, which can be read or modified or reconstituted into skeleton JSON.
 
-First of all, the formatter defaults to a max width of 80 chars, so issues don't always fit on one line.
-We can set the `maxwidth` option in ghapi-macros.jsom to 240 (see below).
+Now, the formatter defaults to a max width of 80 chars, so issues don't always fit on one line.
+We can set the `maxwidth` option by adding this to `ghapi-macros.jsom`:
 
-Secondly, suppose we want to capture some additional information, like the `.user` field.  In this field, the only thing we care about is the `.login`.
+```
+@options .maxwidth 240
+```
+
+Suppose we want to capture some additional information, like the `.user` field.  In this field, the only thing we care about is the `.login` value.
 So let's make another macro.
 
 This, however, won't do what we want:
@@ -244,8 +234,8 @@ This, however, won't do what we want:
 .user { .user { .login ?user . ? } . ? }
 ```
 
-This is because the first macro will soak up all the other keyvalue, before the second macro gets a chance to capture them.
-So if we want to capture both the issue and the user, we have to use an unenclosed object, wrapped inside `<` and `>`, and put it before the `.issue` macro:
+This won't capture both the user login and the issue values, because whichever macro comes first will soak up all the other keyvalue, before the second macro gets a chance to capture them.
+So if we want to capture both the issue and the user, we have to use an unenclosed object, wrapped inside `<` and `>`, and put this smaller-scoped macro before the `.issue` macro:
 
 ```
 .user < .user { .login ?user . ? } >
@@ -271,7 +261,6 @@ Now, this does capture the information, but isn't structurally correct, and won'
 So if we want only one for each issue (with the user object nested inside), both the inner object in the user macro and the .issue macro also must also be defined using unenclosing brackets:
 
 ```
-@options .maxwidth 240
 @macros
 .user < .user < .login ?user . ? > >
 .issue < .number ?number .title ?title . ? >
@@ -289,14 +278,11 @@ Now this gives:
  (issue 1324 "Make it possible to 'just open' a gpkg [sqlite] ")}
 {(user "anjakefala")
  (issue 1319 "Input mysteriously stopped working")}
-{(user "jasonwirth")
- (issue 1317 "[bug Python3.9] \"AttributeError: 'LazyChainMap' object has no attribute 'get'\" when entering pdb++ breakpoint.")}
 ```
 
 Now we can add some more macros to pull out other values of interest:
 
 ```
-@options .maxwidth 840
 @macros
 .user < .user < .login ?user . ? > >
 .label < .labels [ { .name ?name . ? } ] >
