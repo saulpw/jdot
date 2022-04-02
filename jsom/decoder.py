@@ -1,5 +1,6 @@
 import collections
 from dataclasses import dataclass
+import typing
 
 from .jsom import InnerDict, deep_update, Variable
 
@@ -9,8 +10,8 @@ COMMENT_CHAR = '#'
 class Token:
     type: str
     string: str
-    start: tuple[int, int]
-    end: tuple[int, int]
+    start: typing.Tuple[int, int]
+    end: typing.Tuple[int, int]
     line: str
 
     def __str__(self):
