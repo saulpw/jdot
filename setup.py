@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
         name="jsom",
-        version="2022.03.08",
+        version="0.5",
         python_requires='>=3.7',
         py_modules=['jsom'],
         packages=["jsom"],
