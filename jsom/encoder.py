@@ -163,7 +163,7 @@ class JsomEncoder:
             else:
                 i += 1
 
-        return '\n'.join((x.start_level-1)*' '+str(x) for x in chonks)
+        return '\n'.join((x.start_level)*' '+str(x) for x in chonks)
 
 
 def chonker(toks):

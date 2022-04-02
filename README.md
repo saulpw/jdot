@@ -1,5 +1,8 @@
 # JSOM: JSON minus Notation plus Macros
 
+[![Test](https://github.com/saulpw/jsom/actions/workflows/main.yml/badge.svg)](https://github.com/saulpw/jsom/actions?query=workflow%3ATest)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/saulpw/jsom/blob/master/LICENSE.txt)
+
 [Alternate possible names: NOSJ (Nicer Object Syntax for JSON), JSM]
 
 ## A human-readable, -writable, and -diffable format for reasonable JSON
