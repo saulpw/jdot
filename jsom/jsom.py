@@ -83,11 +83,20 @@ def deep_del(a: dict, b: dict):
 
         assert k in a, (a, k)
         if isinstance(a[k], dict):
-            assert isinstance(v, dict)
+            if isinstance(v, Variable):
+                del a[k]  # remove entire matched dicts
+                continue
+
+            assert isinstance(v, dict), v
             deep_del(a[k], v)
-            if not a[k]:
+            if not a[k]:  # remove empty dicts
                 del a[k]
+
         elif isinstance(a[k], list):
+            if isinstance(v, Variable):
+                del a[k]
+                continue
+
             assert isinstance(v, list), v
             for needle in v:
                 for i, item in enumerate(a[k]):
