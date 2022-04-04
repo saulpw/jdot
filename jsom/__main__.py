@@ -87,7 +87,7 @@ def main():
         if out_json:
             print(json.dumps(objs, cls=JsonDefaultEncoder))
         else:
-            print(j.encode(objs, formatter=j.format_better))
+            print(j.encode(objs))
 
 
 if __name__ == '__main__':

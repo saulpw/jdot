@@ -4,6 +4,7 @@ import sys
 from .jsom import deep_match
 from .encoder import JsomEncoder
 from .decoder import JsomDecoder
+from .formatter import JsomFormatter
 
 
 class JsomCoder(JsomEncoder, JsomDecoder):
@@ -18,6 +19,11 @@ class JsomCoder(JsomEncoder, JsomDecoder):
     def debug(self, *args, **kwargs):
         if self.options['debug']:
             print(*args, file=sys.stderr, **kwargs)
+
+    def encode(self, obj, formatter=None):
+        if not formatter:
+            formatter = JsomFormatter()
+        return formatter(self.iterencode(obj))
 
 
 JsomEncoderDecoder = JsomCoder
