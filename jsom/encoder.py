@@ -23,8 +23,9 @@ class JsomEncoder:
                 return
 
             # emit first macro, if any match
-            innards = []
+            macro_invocations = []
             macros_remaining = list(self.macros.items())
+            copied = False
             while macros_remaining:
                 macroname, macro = macros_remaining[0]
                 m = deep_match(obj, macro)
@@ -41,32 +42,28 @@ class JsomEncoder:
                     else:
                         macro_invocation = [macroname]
 
-                    if isinstance(macro, InnerDict):
-                        innards.extend(macro_invocation)
-                    else:
-                        yield from macro_invocation
+                    macro_invocations.append(macro_invocation)
 
                     if isinstance(macro, InnerDict):
+                        if not copied:
+                            obj = obj.copy()
+                            copied = True
                         deep_del(obj, macro)
                     else:
-                        if innards:
-                            yield '{'
-                            yield from innards
-                            yield '}'
-                        return
+                        obj = {}
+
+                    if not obj:
+                        break
 
             # if no macro fully applied, emit rest of dictionary
 
-            show_braces = True
-            if depth == 0:
-                show_braces = False
-            elif len(obj) == 1 and not (depth == 1 and isinstance(parents[-1], list)):
-                show_braces = False
+            show_braces = (depth != 0) and (len(macro_invocations) + len(obj) > 1)
 
             if show_braces:
                 yield '{'
 
-            yield from innards
+            for innards in macro_invocations:
+                yield from innards
 
             for k, v in obj.items():
                 yield f'.{k}'
