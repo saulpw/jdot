@@ -17,7 +17,7 @@ for fn in sys.argv[1:]:
     elif fn.endswith('json'):
         d = json.loads(contents)
     elif fn.endswith('jsom'):
-        j.decode(contents)
+        d = j.decode(contents)
 
     if isinstance(d, list):
         out.extend(d)
