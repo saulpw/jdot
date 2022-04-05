@@ -3,7 +3,7 @@
 import sys
 import json
 
-from jsom import JsomCoder
+from jsom import JsomCoder, JsomFormatter
 
 
 def json2jsom(s):
@@ -43,13 +43,17 @@ def main():
     i = 1
     jsomargs = []
     objs = []
+    pretty_print = False
+    format_options = {}
+    json_indent = 4
+    sort_key = None
     j = JsomCoder()
+
+    out_json = True
 
     while i < len(sys.argv):
         arg = sys.argv[i]
         i += 1
-
-        out_json = True
 
         if arg in ['-d', '--in-jsom']:
             contents = read_arg(sys.argv[i])
@@ -73,6 +77,42 @@ def main():
         elif arg in ['-m', '--out-jsom']:  # encode
             out_json = False
 
+        elif arg in ['-p', '--pretty']:
+            pretty_print = True
+
+        elif arg in ['--indent']:
+            json_indent = int(sys.argv[i])
+            format_options['indent_str'] = ' '*json_indent
+            i += 1
+
+        elif arg in ['--indent-str']:
+            format_options['indent_str'] = sys.argv[i]
+            i += 1
+
+        elif arg in ['--length-limit']:
+            format_options['length_limit'] = int(sys.argv[i])
+            i += 1
+
+        elif arg in ['--value-limit']:
+            format_options['value_limit'] = int(sys.argv[i])
+            i += 1
+
+        elif arg in ['--strip-spaces']:
+            format_options['strip_spaces'] = sys.argv[i]
+            i += 1
+
+        elif arg in ['--close-on-same-line']:
+            format_options['close_on_same_line'] = True
+
+        elif arg in ['--dedent-last-value']:
+            format_options['dedent_last_value'] = True
+
+        elif arg in ['--order-by-key']:
+            sort_key = 'key'
+
+        elif arg in ['--order-by-size']:
+            sort_key = 'size'
+
         elif arg in ['--debug']:
             j.options['debug'] = True
 
@@ -85,9 +125,21 @@ def main():
 
     if objs:
         if out_json:
-            print(json.dumps(objs, cls=JsonDefaultEncoder))
+            if pretty_print:
+                indent = json_indent
+            else:
+                indent = None
+            print(json.dumps(
+                objs,
+                cls=JsonDefaultEncoder,
+                sort_keys=(sort_key == 'key'),
+                indent=indent))
         else:
-            print(j.encode(objs))
+            if pretty_print:
+                formatter = JsomFormatter(**format_options)
+            else:
+                formatter = None
+            print(j.encode(objs, formatter, sort_key))
 
 
 if __name__ == '__main__':
