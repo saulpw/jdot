@@ -63,7 +63,7 @@ def deep_match(a, b):
             for y in a:
                 m = deep_match(y, x)
                 if m is False:  # each item in `b` must match at least one item in `a`
-                    return False
+                    continue
                 if isinstance(m, dict):
                     if ret is False:
                         ret = {}
@@ -84,7 +84,7 @@ def deep_del(a: dict, b: dict):
         assert k in a, (a, k)
         if isinstance(a[k], dict):
             if isinstance(v, Variable):
-                del a[k]  # remove entire matched dicts
+                del a[k]  # remove entire matched entry
                 continue
 
             assert isinstance(v, dict), v
