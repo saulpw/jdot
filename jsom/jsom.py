@@ -108,3 +108,12 @@ def deep_del(a: dict, b: dict):
                         break
         else:
             del a[k]
+
+
+def deep_len(x):
+    'returns the amount of primitive values in a nested structure.'
+    if isinstance(x, dict):
+        return sum(map(deep_len, x.values()))
+    elif isinstance(x, list):
+        return sum(map(deep_len, x))
+    return 1

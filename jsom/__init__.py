@@ -20,11 +20,6 @@ class JsomCoder(JsomEncoder, JsomDecoder):
         if self.options['debug']:
             print(*args, file=sys.stderr, **kwargs)
 
-    def encode(self, obj, formatter=None):
-        if not formatter:
-            formatter = JsomFormatter()
-        return formatter(self.iterencode(obj))
-
 
 JsomEncoderDecoder = JsomCoder
 
@@ -34,5 +29,6 @@ __all__ = [
     "JsomDecoder",
     "JsomEncoder",
     "JsomCoder",
+    "JsomFormatter",
     "deep_match",
 ]

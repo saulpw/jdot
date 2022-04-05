@@ -24,4 +24,4 @@ for fn in sys.argv[1:]:
     elif d:
         out.append(d)
 
-print(j.encode(out))
+print(j.encode(out, 'pretty'))
