@@ -3,11 +3,9 @@
 [![Test](https://github.com/saulpw/jsom/actions/workflows/main.yml/badge.svg)](https://github.com/saulpw/jsom/actions?query=workflow%3ATest)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/saulpw/jsom/blob/master/LICENSE.txt)
 
-[Alternate possible names: NOSJ (Nicer Object Syntax for JSON), JSM]
+## A human-readable, -writable, and -diffable format for JSON
 
-## A human-readable, -writable, and -diffable format for reasonable JSON
-
-Remove all the extraneous symbols from JSON, and it becomes a lot easier to read and write.  Add comments and macros and it's almost pleasant.  And the parser is easier to write too.  Some little ergonomics go a long way.
+Remove all the extraneous symbols from JSON, and it becomes a lot easier to read and write.  Add comments and macros and it's almost pleasant.  Some little ergonomics go a long way.
 
 Conversion between reasonable JSON and JSOM is lossless.
 
@@ -19,6 +17,7 @@ Conversion between reasonable JSON and JSOM is lossless.
 - whitespace agnostic
 - line comments
 - convenient macros
+- round-trippable
 - feels a bit like Lisp
 
 ## What does JSOM look like?
@@ -518,6 +517,7 @@ Jsom := Top+
 # Future ideas (not implemented yet)
   - multiple variables with the same `?varname` should match the same value, and should only be passed in the macro args once.
   - macro invocation with named arguments: `(foo .arg1 42 .arg2 "bar")`
+  - `."keys with spaces"`
 
 # Copyright and License
 
