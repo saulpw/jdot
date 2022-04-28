@@ -27,7 +27,7 @@ class JsomDecoder:
         t = self.toktuple
         errmsgs = [
             f'ERROR: {msg} at line {t.start[0]} (column {t.start[1]})',
-            f'> {t.line}',
+            f'> {t.line.rstrip()}',
             '  ' + ' '*(t.start[1]-1) + '^',
         ]
         for k, v in kwargs.items():
@@ -41,27 +41,49 @@ class JsomDecoder:
         startchnum = 1
         tok = ''
 
-        i = 0  # index into s
         chnum = 1
         linenum = 0
         line = ''
 
-        while i < len(s):
-            ch = s[i]
-            i += 1
-            if ch == '\n' or linenum == 0:
+        if isinstance(s, str):
+            it = iter(x+'\n' for x in s.splitlines())
+        else:
+            it = iter(s)
+
+        while True:
+            if not line[chnum-1:]:
                 linenum += 1
                 chnum = 1
-                eol = s.find('\n', i)
-                if eol < 0:
-                    eol = len(s)
-                line = s[i-1:eol]
-                self.debug(f'{linenum}: {line.strip()}')
+                try:
+                    line = next(it)
+                except StopIteration:
+                    break
 
+                self.debug(f'{linenum}: {line.strip()}')
+                continue
+
+            def parse_escaped_str(s, i=0, delim=''):
+                string = ''
+                while i < len(s):
+                    ch = line[i]
+                    i += 1
+
+                    if ch == delim:
+                        return string, i
+
+                    elif ch == '\\':
+                        string += escchars.get(line[i], line[i])  # next character, itself by default
+                        i += 1
+                    else:
+                        string += ch
+                return string, -1  # not finished
+
+            ch = line[chnum-1]
             chnum += 1
 
             if ch == COMMENT_CHAR:  # comment, ignore until end of line
-                i = eol
+#                yield Token('comment', line[chnum-1:], (linenum, startchnum), (linenum, chnum), line)
+                chnum = len(line)+1
                 continue
 
             if ch.isspace() or ch in '{}[]()<>':
@@ -76,23 +98,24 @@ class JsomDecoder:
             if ch in '"\'':
                 startline = linenum
                 string = ''
-                delim = ch
-                while i < len(s):
-                    ch = s[i]
-                    i += 1
-                    chnum += 1
-                    if ch == delim:
+
+                while True:
+                    bit, i = parse_escaped_str(line, i=chnum-1, delim=ch)
+                    string += bit
+                    if i >= 0:  # string done
+                        chnum = i+1
                         yield Token('str', string, (startline, startchnum), (linenum, chnum), line)
                         break
-                    elif ch == '\\':
-                        string += escchars.get(s[i], s[i])
-                        i += 1
-                    elif ch == '\n':
-                        string += ch
+                    else:
                         linenum += 1
                         chnum = 1
-                    else:
-                        string += ch
+                        try:
+                            line = next(it)
+                        except StopIteration:
+                            self.error(f'unterminated string: {repr(string)}')
+                            break
+
+
                 startchnum = chnum
                 continue
 
