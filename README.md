@@ -495,8 +495,8 @@ InnerList := Value*
 InnerDict := KeyValue*
 
 Key := '.' id
-     | '.' string-literal
-     | '.'                // matches any key
+     | '.' string-literal  // keys with whitespaces or other delimiters
+     | '.'                 // matches any key
 
 Variable := '?' id
           | '?'    // ignore contents
@@ -517,7 +517,6 @@ Jsom := Top+
 # Future ideas (not implemented yet)
   - multiple variables with the same `?varname` should match the same value, and should only be passed in the macro args once.
   - macro invocation with named arguments: `(foo .arg1 42 .arg2 "bar")`
-  - `."keys with spaces"`
 
 # Copyright and License
 

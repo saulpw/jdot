@@ -24,6 +24,7 @@ def test_decode(s, out):
     '{ .i 1 .v "abc" } { .i 2 .v "def" }',
     '.a [ .f 1 .g 2 ]',
     '.str-number "4"',
+    '."quoted key" 4',
     '.empty-string ""',
     '.embedded-opp-quote \'a"b\'',
     ".escape-quote 'a\"\"\\'b'",  # embedded doublequote will force single quote delimiter

@@ -97,14 +97,12 @@ class JsomDecoder:
 
             if ch in '"\'':
                 startline = linenum
-                string = ''
 
                 while True:
                     bit, i = parse_escaped_str(line, i=chnum-1, delim=ch)
-                    string += bit
+                    tok += bit
                     if i >= 0:  # string done
                         chnum = i+1
-                        yield Token('str', string, (startline, startchnum), (linenum, chnum), line)
                         break
                     else:
                         linenum += 1
@@ -112,10 +110,15 @@ class JsomDecoder:
                         try:
                             line = next(it)
                         except StopIteration:
-                            self.error(f'unterminated string: {repr(string)}')
+                            self.error(f'unterminated string: {repr(tok)}')
                             break
 
+                if tok[:1] == '.':
+                    yield Token('key', tok, (startline, startchnum), (linenum, chnum), line)
+                else:
+                    yield Token('str', tok, (startline, startchnum), (linenum, chnum), line)
 
+                tok = ''
                 startchnum = chnum
                 continue
 

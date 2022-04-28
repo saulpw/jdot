@@ -65,6 +65,8 @@ class JsomEncoder:
                 yield from innards
 
             for k, v in sorted(obj.items(), key=sort_key):
+                if any(x in k for x in ' .{}<>[]()'):
+                    k = self.literal(k)
                 yield f'.{k}'
                 yield from self.iterencode(v, sort_key, depth=depth+1, parents=parents+[obj])
 
