@@ -28,11 +28,11 @@ def test_decode(s, out):
     '.embedded-opp-quote \'a"b\'',
     ".escape-quote 'a\"\"\\'b'",  # embedded doublequote will force single quote delimiter
     '.escape-backslash "a\\\\"',
-    """.embedded-newline '
-\\\\
-\\'
+    r""".embedded-newline '
+\\
+\'
 " " "
-\'"""
+'"""
 ])
 def test_roundtrip_jsom(s):
     j = JsomCoder()
