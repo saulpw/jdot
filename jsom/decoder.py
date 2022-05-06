@@ -1,6 +1,5 @@
-import collections
 from dataclasses import dataclass
-import typing
+from typing import Tuple, Iterator
 
 from .jsom import InnerDict, deep_update, Variable
 
@@ -10,12 +9,32 @@ COMMENT_CHAR = '#'
 class Token:
     type: str
     string: str
-    start: typing.Tuple[int, int]
-    end: typing.Tuple[int, int]
+    start: Tuple[int, int]
+    end: Tuple[int, int]
     line: str
 
     def __str__(self):
         return f'{self.string} (line {self.start[0]}, col {self.start[1]})'
+
+
+ESCAPE_CHARS = {'n': '\n', '\\': '\\', '\"': '\"'}
+
+def parse_escaped_str(s:str, i:int=0, delim:str=''):
+    string = ''
+    while i < len(s):
+        ch = s[i]
+        i += 1
+
+        if ch == delim:
+            return string, i
+
+        elif ch == '\\':
+            string += ESCAPE_CHARS.get(s[i], s[i])  # next character, itself by default
+            i += 1
+        else:
+            string += ch
+
+    return string, i  # not finished
 
 
 class DecodeException(Exception):
@@ -34,10 +53,7 @@ class JsomDecoder:
             errmsgs.append(f'{k}={v}')
         raise DecodeException('\n'.join(errmsgs))
 
-    def tokenize(self, s):
-        ''
-        escchars = {'n': '\n', '\\': '\\', '\"': '\"'}
-
+    def tokenize(self, s:str|Iterator[str]) -> Iterator[Token]:
         startchnum = 1
         tok = ''
 
@@ -62,22 +78,6 @@ class JsomDecoder:
                 self.debug(f'{linenum}: {line.strip()}')
                 continue
 
-            def parse_escaped_str(s, i=0, delim=''):
-                string = ''
-                while i < len(s):
-                    ch = line[i]
-                    i += 1
-
-                    if ch == delim:
-                        return string, i
-
-                    elif ch == '\\':
-                        string += escchars.get(line[i], line[i])  # next character, itself by default
-                        i += 1
-                    else:
-                        string += ch
-                return string, -1  # not finished
-
             ch = line[chnum-1]
             chnum += 1
 
@@ -101,7 +101,7 @@ class JsomDecoder:
                 while True:
                     bit, i = parse_escaped_str(line, i=chnum-1, delim=ch)
                     tok += bit
-                    if i >= 0:  # string done
+                    if i < len(line):  # string done before end of string
                         chnum = i+1
                         break
                     else:
