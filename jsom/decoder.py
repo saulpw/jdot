@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Tuple, Iterator
+from typing import Tuple, Iterator, Union
 
 from .jsom import InnerDict, deep_update, Variable
 
@@ -53,7 +53,7 @@ class JsomDecoder:
             errmsgs.append(f'{k}={v}')
         raise DecodeException('\n'.join(errmsgs))
 
-    def tokenize(self, s:str|Iterator[str]) -> Iterator[Token]:
+    def tokenize(self, s:Union[str, Iterator[str]]) -> Iterator[Token]:
         startchnum = 1
         tok = ''
 
