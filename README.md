@@ -1,13 +1,13 @@
-# JSOM: JSON minus Notation plus Macros
+# JDOT: a human-readable, -writable, and -diffable format for JSON
 
-[![Test](https://github.com/saulpw/jsom/actions/workflows/main.yml/badge.svg)](https://github.com/saulpw/jsom/actions?query=workflow%3ATest)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/saulpw/jsom/blob/master/LICENSE.txt)
+## JSON with minimal punctuation, plus Macros
 
-## A human-readable, -writable, and -diffable format for JSON
+[![Test](https://github.com/saulpw/jdot/actions/workflows/main.yml/badge.svg)](https://github.com/saulpw/jdot/actions?query=workflow%3ATest)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/saulpw/jdot/blob/master/LICENSE.txt)
 
 Remove all the extraneous symbols from JSON, and it becomes a lot easier to read and write.  Add comments and macros and it's almost pleasant.  Some little ergonomics go a long way.
 
-Conversion between reasonable JSON and JSOM is lossless.
+Conversion between reasonable JSON and JDOT is lossless.
 
 
 ## Features
@@ -20,9 +20,9 @@ Conversion between reasonable JSON and JSOM is lossless.
 - round-trippable
 - feels a bit like Lisp
 
-## What does JSOM look like?
+## What does JDOT look like?
 
-JSOM looks like this:
+JDOT looks like this:
 
 ```
 .objects {
@@ -70,19 +70,19 @@ Using a macro, it could look like this (and the resulting output would be the sa
 
 # Install
 
-jsom requires [Python 3.6](https://wsvincent.com/install-python/) or higher.
+jdot requires [Python 3.6](https://wsvincent.com/install-python/) or higher.
 
-Once Python is set-up on your operating system, you can install jsom using pip:
+Once Python is set-up on your operating system, you can install jdot using pip:
 
 ```
-pip3 install git+https://github.com/saulpw/jsom.git
+pip3 install git+https://github.com/saulpw/jdot.git
 ```
 
 or you can run the install script locally from your machine:
 
 ```
-git clone https://github.com/saulpw/jsom.git
-cd jsom
+git clone https://github.com/saulpw/jdot.git
+cd jdot
 python3 setup.py install
 ```
 
@@ -90,12 +90,12 @@ python3 setup.py install
 
 ## CLI
 
-The `jsom` script (installed as above) converts between JSON and JSOM.
+The `jdot` script (installed as above) converts between JSON and jdot.
 
-As a quick win, you can easily construct JSON from JSOM on the command line, in many cases without even having to press the Shift key:
+As a quick win, you can easily construct JSON from JDOT on the command line, in many cases without even having to press the Shift key:
 
 ```
-$ jsom '.fetch singles .query { .city portland .cats { .min 1 .max 6'
+$ jdot '.fetch singles .query { .city portland .cats { .min 1 .max 6'
 
 {"fetch": "singles", "query": {"city": "portland", "cats": {"min": 1, "max": 6}}}
 ```
@@ -103,28 +103,28 @@ $ jsom '.fetch singles .query { .city portland .cats { .min 1 .max 6'
 (Note that the final closing braces may be omitted unless the `strict` option is set to true.)
 
 Other options:
-- `-d <filename.jsom>` to decode JSOM from a file (or `-` for stdin); sets output as JSON
-- `-e <filename.json>` to encode JSON from a file (or `-` for stdin); sets output as JSOM
-- `-m` to set output as JSOM
+- `-d <filename.jdot>` to decode JDOT from a file (or `-` for stdin); sets output as JSON
+- `-e <filename.json>` to encode JSON from a file (or `-` for stdin); sets output as JDOT
+- `-m` to set output as JDOT
 - `-n` to set output as JSON
 
 These options can be used multiple times and mixed-and-matched.  For example:
 
 ```
-jsom -d api-macros.jsom -e api-input.json > api-output.jsom
+jdot -d api-macros.jdot -e api-input.json > api-output.jdot
 ```
 
-This will output the result from `api-macros.jsom` (which should not output anything, if it's only defining macros) and then output the result of `api-input.json` as JSOM, with macros substituted as it finds them.
+This will output the result from `api-macros.jdot` (which should not output anything, if it's only defining macros) and then output the result of `api-input.json` as JDOT, with macros substituted as it finds them.
 
 
 ## Python library
 
-The `jsom` Python library can also be used programmatically:
+The `jdot` Python library can also be used programmatically:
 
 ```
->>> from jsom import JsomCoder
+>>> from jdot import JdotCoder
 
->>> j = JsomCoder()
+>>> j = JdotCoder()
 
 >>> j.encode(dict(a="foo", pi=3.14, c=[1,2,3,4]))
  .a "foo"
@@ -170,10 +170,10 @@ Now you can browse this JSON using [jq](https://stedolan.github.io/jq/) or [Visi
       ...
 ```
 
-Convert to JSOM:
+Convert to JDOT:
 
 ```
-$ jsom -e visidata-issues.json > visidata-issues.jsom
+$ jdot -e visidata-issues.json > visidata-issues.jdot
 ```
 
 ```
@@ -190,7 +190,7 @@ $ jsom -e visidata-issues.json > visidata-issues.jsom
 
 Now certain things in a bug report are important to capture, but much of the JSON are inlined objects with a lot of extra information that can be removed, and joined from another table if necessary.
 
-To start, we can factor out the list of open issue id `.number` and `.title`.  We can make a `ghapi-macros.jsom` with this:
+To start, we can factor out the list of open issue id `.number` and `.title`.  We can make a `ghapi-macros.jdot` with this:
 
 ```
 @macros
@@ -200,10 +200,10 @@ To start, we can factor out the list of open issue id `.number` and `.title`.  W
 This puts an `.issue` macro into the `macros` global dictionary, which matches any object with both `.number` and `.title` keys, captures the values of those keys, and discards the rest.
 (`.` matches any key and `?` matches any value and discards it.)
 
-Now feed this into `jsom` with `-d` to decode the JSOM macros file first:
+Now feed this into `jdot` with `-d` to decode the JDOT macros file first:
 
 ```
-$ jsom -d ghapi-macros.jsom -e visidata-issues.json > visidata-issues.jsom
+$ jdot -d ghapi-macros.jdot -e visidata-issues.json > visidata-issues.jdot
 ```
 
 ```
@@ -218,7 +218,7 @@ $ jsom -d ghapi-macros.jsom -e visidata-issues.json > visidata-issues.jsom
 And so this is the list of open issue ids and titles, which can be read or modified or reconstituted into skeleton JSON.
 
 Now, the formatter defaults to a max width of 80 chars, so issues don't always fit on one line.
-We can set the `maxwidth` option by adding this to `ghapi-macros.jsom`:
+We can set the `maxwidth` option by adding this to `ghapi-macros.jdot`:
 
 ```
 @options .maxwidth 240
@@ -313,10 +313,10 @@ Which yields this:
 Now, to reconstitute this into JSON (which will not have the discarded fields, of course):
 
 ```
-$ jsom -d ghapi-macros.jsom -d visidata-issues.jsom
+$ jdot -d ghapi-macros.jdot -d visidata-issues.jdot
 ```
 
-This uses the same macros file as was used to encode the original JSOM, and decodes the generated JSOM:
+This uses the same macros file as was used to encode the original JDOT, and decodes the generated JDOT:
 
 ```
 [
@@ -386,7 +386,7 @@ This uses the same macros file as was used to encode the original JSOM, and deco
   - `{ .outer .inner { ... } }` => `{ "outer": { "inner": { ... } } }`
      - the outer key is automatically closed after the inner value finishes; `inner` is the only element in `outer`
      - after setting a value, the next `.key` will be inserted into the most recently opened dict
-  - key must be reasonable: no spaces or symbols that have meaning in JSOM
+  - key must be reasonable: no spaces or symbols that have meaning in JDOT
 
 ## globals
 
@@ -395,7 +395,7 @@ A token like `@globals` will clear out the parsing stack and push the named glob
 
 ## `@options`
 
-Set values at various keys in `@options` to control aspects the JSOM parser.
+Set values at various keys in `@options` to control aspects the JDOT parser.
 
   - `.debug` (default `false`): set to `true` for extra debug output.
   - `.strict` (default `false`): set to `true` to error on unknown token (otherwise implicit conversion to string)
@@ -409,7 +409,7 @@ For example:
 
 Add items to `@macros` to create new macro definitions.
 The key is the macro name, and the value is the template to be matched or filled.
-The template is given using the same JSOM syntax, so JSOM output can be copied verbatim into a macro.
+The template is given using the same JDOT syntax, so JDOT output can be copied verbatim into a macro.
 
 Variable values are designated like `?varname`.
 Variables can match any type, including containers.
@@ -511,7 +511,7 @@ Top := SectionName InnerDict
          | InnerList
          | InnerDict
 
-Jsom := Top+
+Jdot := Top+
 ```
 
 # Future ideas (not implemented yet)

@@ -5,9 +5,9 @@ import json
 
 import yaml
 
-import jsom
+import jdot
 
-j = jsom.JsomCoder()
+j = jdot.JdotCoder()
 out = []
 
 for fn in sys.argv[1:]:
@@ -16,7 +16,7 @@ for fn in sys.argv[1:]:
         d = yaml.load(contents, yaml.Loader)
     elif fn.endswith('json'):
         d = json.loads(contents)
-    elif fn.endswith('jsom'):
+    elif fn.endswith('jdot'):
         d = j.decode(contents)
 
     if isinstance(d, list):

@@ -1,4 +1,4 @@
-name: jsom-ci-build
+name: jdot-ci-build
 on:
   pull_request:
     branches:
@@ -24,7 +24,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install jsom and pytest
+    - name: Install jdot and pytest
       run: |
         pip install pytest
         python setup.py develop

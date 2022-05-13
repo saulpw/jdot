@@ -1,7 +1,7 @@
-__all__ = ['JsomFormatter']
+__all__ = ['JdotFormatter']
 
 
-class JsomFormatter:
+class JdotFormatter:
     def __init__(
         self,
         indent_str='  ',
@@ -12,7 +12,7 @@ class JsomFormatter:
         dedent_last_value=False,
     ):
         """
-        Creates a JSOM formatter using the given configuration.
+        Creates a JDOT formatter using the given configuration.
          - indent_str specifies which indentation character(s) to use.
          - length_limit specifies an approximate maximum number of characters
            that will be considered for emitting a group of tokens on a single

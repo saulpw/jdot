@@ -1,6 +1,6 @@
 import pytest
 
-from jsom import JsomCoder
+from jdot import JdotCoder
 
 @pytest.mark.parametrize(("s", "out"), [
     ('.a { .b .c 3 .d 4 }', dict(a=dict(b=dict(c=3), d=4))),
@@ -9,7 +9,7 @@ from jsom import JsomCoder
     ('{.f 1 } { .g 2 }', [dict(f=1), dict(g=2)]),
 ])
 def test_decode(s, out):
-    j = JsomCoder()
+    j = JdotCoder()
     d = j.decode(s)
     assert d == out
 
@@ -35,8 +35,8 @@ def test_decode(s, out):
 " " "
 '"""
 ])
-def test_roundtrip_jsom(s):
-    j = JsomCoder()
+def test_roundtrip_jdot(s):
+    j = JdotCoder()
     d = j.decode(s)
     assert s == j.encode_oneliner(d)
 
@@ -48,7 +48,7 @@ def test_roundtrip_jsom(s):
     ([{"f": 1, "g": 2}], '{ .f 1 .g 2 }'),  # c) follows from above
 ])
 def test_roundtrip_dict(obj, enc):
-    j = JsomCoder()
+    j = JdotCoder()
     r = j.encode_oneliner(obj)
     assert r == enc
     assert j.decode(r) == obj, r
@@ -65,14 +65,14 @@ def test_roundtrip_dict(obj, enc):
     ('@macros .asc < .a [ { .k ?v .dir "ASC"} ] > .desc < .a [ { .k ?v .dir "DESC"} ] >', dict(a=[dict(k=1, dir="DESC"), dict(k=2, dir="ASC")]), '( asc 2 ) ( desc 1 )'),
 ])
 def test_macro_encode(macros, d, out):
-    j = JsomCoder()
+    j = JdotCoder()
     assert not j.decode(macros)
     r = j.encode_oneliner(d)
     assert r == out, j.globals['macros']
 
 
 def test_macro():
-    j = JsomCoder()
+    j = JdotCoder()
     d = j.decode('@macros .foo { .x 2 }')
     assert 'foo' in j.globals['macros'], j.globals['macros']
 
@@ -82,7 +82,7 @@ def test_macro():
     ' # .a 3 .b 2 "',
 ])
 def test_comments(s):
-    j = JsomCoder()
+    j = JdotCoder()
     d = j.decode(s)
     assert not d
 
@@ -91,8 +91,8 @@ def test_comments(s):
     ('@macros .foo .a ?a @output .outer ( foo 4 )', '.outer .a 4'),
 ])
 def test_decode_reencode(s, out):
-    j = JsomCoder()
+    j = JdotCoder()
     d = j.decode(s)
-    assert out == JsomCoder().encode_oneliner(d)  # un-macroed
-    macrodefs = JsomCoder().encode_oneliner(j.globals['macros'])
+    assert out == JdotCoder().encode_oneliner(d)  # un-macroed
+    macrodefs = JdotCoder().encode_oneliner(j.globals['macros'])
     assert ' '.join(['@macros', macrodefs, '@output', j.encode_oneliner(d)]) == s  # re-macroed

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Tuple, Iterator, Union
 
-from .jsom import InnerDict, deep_update, Variable
+from .jdot import InnerDict, deep_update, Variable
 
 COMMENT_CHAR = '#'
 
@@ -41,7 +41,7 @@ class DecodeException(Exception):
     pass
 
 
-class JsomDecoder:
+class JdotDecoder:
     def error(self, msg, **kwargs):
         t = self.toktuple
         errmsgs = [

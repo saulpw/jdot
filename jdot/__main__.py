@@ -3,11 +3,11 @@
 import sys
 import json
 
-from jsom import JsomCoder, JsomFormatter
+from jdot import JdotCoder, JdotFormatter
 
 
-def json2jsom(s):
-    j = JsomCoder()
+def json2jdot(s):
+    j = JdotCoder()
     d = json.loads(s)
     s = j.encode(d)
     return '\n'.join(line.rstrip() for line in s.splitlines())
@@ -18,8 +18,8 @@ class JsonDefaultEncoder(json.JSONEncoder):
         return str(obj)
 
 
-def jsom2json(s):
-    j = JsomCoder()
+def jdot2json(s):
+    j = JdotCoder()
     d = j.decode(s)
     return json.dumps(d, cls=JsonDefaultEncoder)
 
@@ -41,13 +41,13 @@ def iterobjs(d):
 
 def main():
     i = 1
-    jsomargs = []
+    jdotargs = []
     objs = []
     pretty_print = False
     format_options = {}
     json_indent = 4
     sort_key = None
-    j = JsomCoder()
+    j = JdotCoder()
 
     out_json = True
 
@@ -55,7 +55,7 @@ def main():
         arg = sys.argv[i]
         i += 1
 
-        if arg in ['-d', '--in-jsom']:
+        if arg in ['-d', '--in-jdot']:
             contents = read_arg(sys.argv[i])
             d = j.decode(contents)
             objs.extend(iterobjs(d))
@@ -74,7 +74,7 @@ def main():
         elif arg in ['-j', '--out-json']:
             out_json = True
 
-        elif arg in ['-m', '--out-jsom']:  # encode
+        elif arg in ['-m', '--out-jdot']:  # encode
             out_json = False
 
         elif arg in ['-p', '--pretty']:
@@ -117,10 +117,10 @@ def main():
             j.options['debug'] = True
 
         else:
-            jsomargs.append(arg)
+            jdotargs.append(arg)
 
-    if jsomargs:
-        d = j.decode(' '.join(jsomargs))
+    if jdotargs:
+        d = j.decode(' '.join(jdotargs))
         objs.extend(iterobjs(d))
 
     if objs:
@@ -136,7 +136,7 @@ def main():
                 indent=indent))
         else:
             if pretty_print:
-                formatter = JsomFormatter(**format_options)
+                formatter = JdotFormatter(**format_options)
             else:
                 formatter = None
             print(j.encode(objs, formatter, sort_key))

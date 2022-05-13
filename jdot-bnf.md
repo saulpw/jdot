@@ -51,4 +51,4 @@ Top := SectionName InnerDict
          | InnerList
          | InnerDict
 
-Jsom := Top+
+Jdot := Top+

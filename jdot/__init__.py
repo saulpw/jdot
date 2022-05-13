@@ -1,13 +1,13 @@
 import sys
 
 
-from .jsom import deep_match
-from .encoder import JsomEncoder
-from .decoder import JsomDecoder
-from .formatter import JsomFormatter
+from .jdot import deep_match
+from .encoder import JdotEncoder
+from .decoder import JdotDecoder
+from .formatter import JdotFormatter
 
 
-class JsomCoder(JsomEncoder, JsomDecoder):
+class JdotCoder(JdotEncoder, JdotDecoder):
     def __init__(self, **kwargs):
         super().__init__()
         self.toktuple = None
@@ -21,14 +21,14 @@ class JsomCoder(JsomEncoder, JsomDecoder):
             print(*args, file=sys.stderr, **kwargs)
 
 
-JsomEncoderDecoder = JsomCoder
+JdotEncoderDecoder = JdotCoder
 
 
 __all__ = [
-    "JsomEncoderDecoder",
-    "JsomDecoder",
-    "JsomEncoder",
-    "JsomCoder",
-    "JsomFormatter",
+    "JdotEncoderDecoder",
+    "JdotDecoder",
+    "JdotEncoder",
+    "JdotCoder",
+    "JdotFormatter",
     "deep_match",
 ]

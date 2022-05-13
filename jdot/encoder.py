@@ -1,8 +1,8 @@
-from .jsom import InnerDict, deep_match, deep_del, deep_len
-from .formatter import JsomFormatter
+from .jdot import InnerDict, deep_match, deep_del, deep_len
+from .formatter import JdotFormatter
 
 
-class JsomEncoder:
+class JdotEncoder:
     def __init__(self):
         self.revmacros = {}
 
@@ -121,13 +121,13 @@ class JsomEncoder:
         return self.encode(obj, formatter=' '.join)
 
     def encode(self, obj, formatter=None, sort_key=None):
-        """Encodes the given object as JSOM using the macros currently
+        """Encodes the given object as JDOT using the macros currently
         registered with this encoder.
 
         formatter can be set None to disable formatting, 'pretty' for
         pretty-printing, or to a function that takes an iterable of tokens and
         inserts whitespace between them to form a string, such as
-        ' '.join (= None), an instance of JsomFormatter for pretty-printing
+        ' '.join (= None), an instance of JdotFormatter for pretty-printing
         (default options = 'pretty'), or a user-defined pretty-printing
         function.
 
@@ -138,7 +138,7 @@ class JsomEncoder:
         if formatter is None:
             formatter = ' '.join
         elif formatter == 'pretty':
-            formatter = JsomFormatter()
+            formatter = JdotFormatter()
         if sort_key is None:
             sort_key = lambda x: 0
         elif sort_key == 'key':
