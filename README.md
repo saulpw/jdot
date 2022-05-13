@@ -2,6 +2,7 @@
 
 ## JSON with minimal punctuation, plus Macros
 
+[![PyPI](https://img.shields.io/pypi/v/jdot.svg)](https://pypi.org/project/jdot/)
 [![Test](https://github.com/saulpw/jdot/actions/workflows/main.yml/badge.svg)](https://github.com/saulpw/jdot/actions?query=workflow%3ATest)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/saulpw/jdot/blob/master/LICENSE.txt)
 
