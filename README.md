@@ -24,6 +24,8 @@ Conversion between reasonable JSON and JDOT is lossless.
 
 JDOT looks like this:
 
+points.jdot:
+
 ```
 .objects {
    .names [ "nowhere" "here" "there" "everywhere" ]
@@ -36,8 +38,13 @@ JDOT looks like this:
 }
 ```
 
-which translates to this JSON:
+which translates to this JSON with this CLI command:
 
+```
+$ jdot -d points.jdot > points.json
+```
+
+points.json:
 
 ```
 {
@@ -53,7 +60,13 @@ which translates to this JSON:
 }
 ```
 
-Using a macro, it could look like this (and the resulting output would be the same as above):
+Using a macro, the JDOT could look like this (and the resulting JSON would be the same as above):
+
+```
+$ jdot -d points-macro.jdot > points.json
+```
+
+points-macro.jdot:
 
 ```
 @macros
@@ -70,20 +83,20 @@ Using a macro, it could look like this (and the resulting output would be the sa
 
 # Install
 
-jdot requires [Python 3.6](https://wsvincent.com/install-python/) or higher.
+jdot requires [Python 3.7](https://wsvincent.com/install-python/) or higher.
 
 Once Python is set-up on your operating system, you can install jdot using pip:
 
 ```
-pip3 install git+https://github.com/saulpw/jdot.git
+$ pip3 install jdot
 ```
 
 or you can run the install script locally from your machine:
 
 ```
-git clone https://github.com/saulpw/jdot.git
-cd jdot
-python3 setup.py install
+$ git clone https://github.com/saulpw/jdot.git
+$ cd jdot
+$ python3 setup.py install
 ```
 
 # Usage
@@ -111,7 +124,7 @@ Other options:
 These options can be used multiple times and mixed-and-matched.  For example:
 
 ```
-jdot -d api-macros.jdot -e api-input.json > api-output.jdot
+$ jdot -d api-macros.jdot -e api-input.json > api-output.jdot
 ```
 
 This will output the result from `api-macros.jdot` (which should not output anything, if it's only defining macros) and then output the result of `api-input.json` as JDOT, with macros substituted as it finds them.
@@ -127,9 +140,7 @@ The `jdot` Python library can also be used programmatically:
 >>> j = JdotCoder()
 
 >>> j.encode(dict(a="foo", pi=3.14, c=[1,2,3,4]))
- .a "foo"
-  .pi 3.14
-  .c [1 2 3 4]
+ .a "foo" .pi 3.14 .c [1 2 3 4]
 
 >>> j.decode('.a "foo" .pi 3.14 .c [1 2 3 4]')
 
@@ -138,11 +149,13 @@ The `jdot` Python library can also be used programmatically:
 
 # Tutorial
 
-This command from [`github-cli`]() uses the Github API to download the list of issues from a github repo in JSON format:
+This command from [`github-cli`](https://github.com/cli/cli#installation) uses the Github API to download the list of issues from a github repo in JSON format:
 
 ```
 gh api repos/saulpw/visidata/issues > visidata-issues.json
 ```
+
+(If using `github-cli` for the first time, first run `gh auth login` to authenticate with your GitHub account.)
 
 Now you can browse this JSON using [jq](https://stedolan.github.io/jq/) or [VisiData](https://visidata.org) or just plain [cat](https://www.unix.com/man-page/posix/1posix/cat/):
 
@@ -198,7 +211,7 @@ To start, we can factor out the list of open issue id `.number` and `.title`.  W
 ```
 
 This puts an `.issue` macro into the `macros` global dictionary, which matches any object with both `.number` and `.title` keys, captures the values of those keys, and discards the rest.
-(`.` matches any key and `?` matches any value and discards it.)
+(`.` matches any key not otherwise defined and `?` matches any value and discards it. `.title ?title` means capture the title. `.title ?` means discard the title.)
 
 Now feed this into `jdot` with `-d` to decode the JDOT macros file first:
 
@@ -207,21 +220,26 @@ $ jdot -d ghapi-macros.jdot -e visidata-issues.json > visidata-issues.jdot
 ```
 
 ```
-(issue 1328
-  "[selection expansion]  Add ability to expand current selection by N rows ")
-(issue 1327
-  "[selection expansion] Expand current selection with a comma command that expands all matching selection.")
-(issue 1324 "Make it possible to 'just open' a gpkg [sqlite] ")
-(issue 1319 "Input mysteriously stopped working")
+(issue 1328 "[selection expansion]  Add ability to expand current selection by N rows ") (issue 1327 "[selection expansion] Expand current selection with a comma command that expands all matching selection.") (issue 1324 "Make it possible to 'just open' a gpkg [sqlite] ") (issue 1319 "Input mysteriously stopped working")
 ```
 
 And so this is the list of open issue ids and titles, which can be read or modified or reconstituted into skeleton JSON.
 
-Now, the formatter defaults to a max width of 80 chars, so issues don't always fit on one line.
-We can set the `maxwidth` option by adding this to `ghapi-macros.jdot`:
+Now, the formatter defaults to printing everything on a single line.
+We can have a prettier output by adding the `-p` / `--pretty` flag:
 
 ```
-@options .maxwidth 240
+$ jdot -d ghapi-macros.jdot -e visidata-issues.json -p
+```
+
+```
+( issue 1328 "[selection expansion] Add ability to expand current selection by N rows " )
+( issue
+  1327
+    "[selection expansion] Expand current selection with a comma command that expands all matching expansion"
+    )
+( issue 1324 "Make it possible to 'just open' a gpkg [sqlite] " )
+( issue 1319 "Input mysteriously stopped working" )
 ```
 
 Suppose we want to capture some additional information, like the `.user` field.  In this field, the only thing we care about is the `.login` value.
@@ -230,6 +248,8 @@ So let's make another macro.
 This, however, won't do what we want:
 
 ```
+@macros
+.issue { .number ?number .title ?title . ? }
 .user { .user { .login ?user . ? } . ? }
 ```
 
@@ -237,35 +257,67 @@ This won't capture both the user login and the issue values, because whichever m
 So if we want to capture both the issue and the user, we have to use an unenclosed object, wrapped inside `<` and `>`, and put this smaller-scoped macro before the `.issue` macro:
 
 ```
+@macros
 .user < .user { .login ?user . ? } >
+.issue { .number ?number .title ?title . ? }
 ```
 
 The .user macro has an inner `. ?` wildcard (to discard the inlined denormalized user object), but does *not* have an outer wildcard, so that the rest of the object is available match the rest of the macros.
 
-This outputs:
+This outputs (with pretty-printing `-p`):
 
 ```
-(issue 1328 "[selection expansion]  Add ability to expand current selection by N rows ")
-{(user "frosencrantz")}
-(issue 1327 "[selection expansion] Expand current selection with a comma command that expands all matching selection.")
-{(user "frosencrantz")}
-(issue 1324 "Make it possible to 'just open' a gpkg [sqlite] ")
-{(user "rduivenvoorde")}
-(issue 1319 "Input mysteriously stopped working")
-{(user "anjakefala")}
+{
+  ( user "frosencrantz" )
+  ( issue 1328 "[selection expansion]  Add ability to expand current selection by N rows " )
+}
+{
+  (user "frosencrantz")
+  ( issue
+    1327
+    "[selection expansion] Expand current selection with a comma command that expands all matching selection."
+  )
+}
+{
+  (user "rduivenvoorde")
+  (issue 1324 "Make it possible to 'just open' a gpkg [sqlite] ")
+}
+{
+  (user "anjakefala")
+  (issue 1319 "Input mysteriously stopped working")
+}
 ```
 
-Now, this does capture the information, but isn't structurally correct, and won't reconstitute the JSON accurately; there will be two objects (an issue object and a user object).
+As covered, there are two ways to describe the nesting of the JDOT: `{}` and `<>`.
 
-So if we want only one for each issue (with the user object nested inside), both the inner object in the user macro and the .issue macro also must also be defined using unenclosing brackets:
+`{}` opens up a scope. To define a subset of the JDOT to capture, it needs to completely match its attributes, either explicitly or with the inclusion of a `. ?`. It will then capture the entire part of the JSON that is described, substitute it based on the macro definition, and any macros afterwards cannot reference that section.
+
+For e.g, say we have this JSON object:
 
 ```
-@macros
-.user < .user < .login ?user . ? > >
-.issue < .number ?number .title ?title . ? >
+user: {
+    'login': 'anja',
+    'id': 5,
+}
 ```
 
-Now this gives:
+The macro `.user { .login ?name }` will not work. This is because the contents between the `{}` do not describe the complete object. The 'id' is missing.
+
+To capture it, it will need to be `.user { .login ?name . ? }`, where `.` references all of the remaining keys, and `?` discards them.
+
+It will result in this JDOT:
+
+```
+( user "anja" )
+```
+
+Conversely, `<>` does not open up a scope. It will match partial attributes, and then will replace the partial attributes only.
+
+So, for e.g., `.user < .login ?name >`, will result in the JDOT:
+
+```
+.user { ( user "anja" ) .id 5 }
+```
 
 
 ```
@@ -280,6 +332,23 @@ Now this gives:
 ```
 
 Now we can add some more macros to pull out other values of interest:
+
+```
+.dates < .created_at ?created .modified_at ?modified .closed_at ?closed
+```
+
+This pulls out important dates related to the issue.
+Here, you can see that the variables names (e.g. `?created`) are different from the keys they are associated with (e.g. `.created_at`). This is permitted.
+`?` just needs to have a variable name to capture the value associated with the tag. The variable name does not need to match the tag.
+To prepare for future developments in `jdot`, it is advised to give each variable a meaningful unique name in the scope of its macro.
+
+```
+.crickets < .assignee null .comments 0 .reactions { .total_count 0 . ? } >
+```
+
+This only captures issues where there are 0 comments, no assignees, and 0 total emoji reactions.
+
+All together, we get:
 
 ```
 @macros
