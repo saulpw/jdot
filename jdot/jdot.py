@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 
 
 class Variable:
-    def __init__(self, key=''):
-        '''*key* is key in output dict, if specified (otherwise matches anything, and is not saved).'''
+    def __init__(self, key=""):
+        """*key* is key in output dict, if specified (otherwise matches anything, and is not saved)."""
         self.key = key
 
     def __repr__(self):
-        return '?'+self.key
+        return "?" + self.key
 
 
 class InnerDict(dict):
-    'instantiate only the inner keys and not the dict itself'
+    "instantiate only the inner keys and not the dict itself"
     pass
 
 
 def deep_update(a: dict, b: dict, type=lambda v: v):
-    ''
+    """"""
     if not b:
         return a
 
@@ -32,16 +33,16 @@ def deep_update(a: dict, b: dict, type=lambda v: v):
 
 
 def deep_match(a, b):
-    'Return dict of matches between a and b if a and b are dicts/lists and a and b are exact matches, or boolean equality otherwise.'
+    "Return dict of matches between a and b if a and b are dicts/lists and a and b are exact matches, or boolean equality otherwise."
     if isinstance(b, Variable):  # Variables match anything
-        if b.key == '?':  # match but don't return value
+        if b.key == "?":  # match but don't return value
             return {}
         return {b.key: a}
 
     elif isinstance(a, dict) and isinstance(b, dict):
         if not isinstance(b, InnerDict):
             keydiffs = set(a.keys()) ^ set(b.keys())
-            if keydiffs and '' not in keydiffs:
+            if keydiffs and "" not in keydiffs:
                 return False
         ret = {}
         for k, v in b.items():
@@ -75,7 +76,7 @@ def deep_match(a, b):
 
 
 def deep_del(a: dict, b: dict):
-    'deep remove contents of *b* from *a*.'
+    "deep remove contents of *b* from *a*."
     for k, v in b.items():
         if not k:
             a.clear()
@@ -111,7 +112,7 @@ def deep_del(a: dict, b: dict):
 
 
 def deep_len(x):
-    'returns the amount of primitive values in a nested structure.'
+    "returns the amount of primitive values in a nested structure."
     if isinstance(x, dict):
         return sum(map(deep_len, x.values()))
     elif isinstance(x, list):

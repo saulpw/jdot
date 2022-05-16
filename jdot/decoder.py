@@ -1,9 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+
 from dataclasses import dataclass
 from typing import Tuple, Iterator, Union
 
 from .jdot import InnerDict, deep_update, Variable
 
-COMMENT_CHAR = '#'
+COMMENT_CHAR = "#"
+
 
 @dataclass
 class Token:
@@ -14,13 +17,14 @@ class Token:
     line: str
 
     def __str__(self):
-        return f'{self.string} (line {self.start[0]}, col {self.start[1]})'
+        return f"{self.string} (line {self.start[0]}, col {self.start[1]})"
 
 
-ESCAPE_CHARS = {'n': '\n', '\\': '\\', '\"': '\"'}
+ESCAPE_CHARS = {"n": "\n", "\\": "\\", '"': '"'}
 
-def parse_escaped_str(s:str, i:int=0, delim:str=''):
-    string = ''
+
+def parse_escaped_str(s: str, i: int = 0, delim: str = ""):
+    string = ""
     while i < len(s):
         ch = s[i]
         i += 1
@@ -28,7 +32,7 @@ def parse_escaped_str(s:str, i:int=0, delim:str=''):
         if ch == delim:
             return string, i
 
-        elif ch == '\\':
+        elif ch == "\\":
             string += ESCAPE_CHARS.get(s[i], s[i])  # next character, itself by default
             i += 1
         else:
@@ -45,29 +49,29 @@ class JdotDecoder:
     def error(self, msg, **kwargs):
         t = self.toktuple
         errmsgs = [
-            f'ERROR: {msg} at line {t.start[0]} (column {t.start[1]})',
-            f'> {t.line.rstrip()}',
-            '  ' + ' '*(t.start[1]-1) + '^',
+            f"ERROR: {msg} at line {t.start[0]} (column {t.start[1]})",
+            f"> {t.line.rstrip()}",
+            "  " + " " * (t.start[1] - 1) + "^",
         ]
         for k, v in kwargs.items():
-            errmsgs.append(f'{k}={v}')
-        raise DecodeException('\n'.join(errmsgs))
+            errmsgs.append(f"{k}={v}")
+        raise DecodeException("\n".join(errmsgs))
 
-    def tokenize(self, s:Union[str, Iterator[str]]) -> Iterator[Token]:
+    def tokenize(self, s: Union[str, Iterator[str]]) -> Iterator[Token]:
         startchnum = 1
-        tok = ''
+        tok = ""
 
         chnum = 1
         linenum = 0
-        line = ''
+        line = ""
 
         if isinstance(s, str):
-            it = iter(x+'\n' for x in s.splitlines())
+            it = iter(x + "\n" for x in s.splitlines())
         else:
             it = iter(s)
 
         while True:
-            if not line[chnum-1:]:
+            if not line[chnum - 1 :]:
                 linenum += 1
                 chnum = 1
                 try:
@@ -75,34 +79,36 @@ class JdotDecoder:
                 except StopIteration:
                     break
 
-                self.debug(f'{linenum}: {line.strip()}')
+                self.debug(f"{linenum}: {line.strip()}")
                 continue
 
-            ch = line[chnum-1]
+            ch = line[chnum - 1]
             chnum += 1
 
             if ch == COMMENT_CHAR:  # comment, ignore until end of line
-#                yield Token('comment', line[chnum-1:], (linenum, startchnum), (linenum, chnum), line)
-                chnum = len(line)+1
+                #                yield Token('comment', line[chnum-1:], (linenum, startchnum), (linenum, chnum), line)
+                chnum = len(line) + 1
                 continue
 
-            if ch.isspace() or ch in '{}[]()<>':
+            if ch.isspace() or ch in "{}[]()<>":
                 if tok:
-                    yield Token('token', tok, (linenum, startchnum), (linenum, chnum), line)
-                    tok = ''
+                    yield Token(
+                        "token", tok, (linenum, startchnum), (linenum, chnum), line
+                    )
+                    tok = ""
                 startchnum = chnum
 
             if ch.isspace():
                 continue
 
-            if ch in '"\'':
+            if ch in "\"'":
                 startline = linenum
 
                 while True:
-                    bit, i = parse_escaped_str(line, i=chnum-1, delim=ch)
+                    bit, i = parse_escaped_str(line, i=chnum - 1, delim=ch)
                     tok += bit
                     if i < len(line):  # string done before end of string
-                        chnum = i+1
+                        chnum = i + 1
                         break
                     else:
                         linenum += 1
@@ -110,38 +116,42 @@ class JdotDecoder:
                         try:
                             line = next(it)
                         except StopIteration:
-                            self.error(f'unterminated string: {repr(tok)}')
+                            self.error(f"unterminated string: {repr(tok)}")
                             break
 
-                if tok[:1] == '.':
-                    yield Token('key', tok, (startline, startchnum), (linenum, chnum), line)
+                if tok[:1] == ".":
+                    yield Token(
+                        "key", tok, (startline, startchnum), (linenum, chnum), line
+                    )
                 else:
-                    yield Token('str', tok, (startline, startchnum), (linenum, chnum), line)
+                    yield Token(
+                        "str", tok, (startline, startchnum), (linenum, chnum), line
+                    )
 
-                tok = ''
+                tok = ""
                 startchnum = chnum
                 continue
 
-            if ch in '{}[]()<>':
-                yield Token(ch, ch, (linenum, chnum-1), (linenum, chnum), line)
+            if ch in "{}[]()<>":
+                yield Token(ch, ch, (linenum, chnum - 1), (linenum, chnum), line)
             else:
                 tok += ch
 
         if tok:
-            yield Token(tok, tok, (linenum, chnum-1), (linenum, chnum), line)
-            tok = ''
+            yield Token(tok, tok, (linenum, chnum - 1), (linenum, chnum), line)
+            tok = ""
 
     def decode(self, s):
         return self.iterdecode(self.tokenize(s))
 
     def iterdecode(self, it):
-        '*it* can be str or generator of Token.  Return list of parsed objects.'
+        "*it* can be str or generator of Token.  Return list of parsed objects."
 
         key = None
         ret = None  # root list to return
         stack = []  # path from root
         curr = None
-        self.globals['output'] = None  # make available as '@output'
+        self.globals["output"] = None  # make available as '@output'
 
         while True:
             try:
@@ -155,18 +165,18 @@ class JdotDecoder:
 
             self.debug(stack, curr, self.toktuple)
 
-            if self.toktuple.type == 'str':  # string literal
+            if self.toktuple.type == "str":  # string literal
                 out = tok
 
-            elif tok[0] == '?':  # variable
+            elif tok[0] == "?":  # variable
                 out = Variable(tok[1:])
 
-            elif tok[0] == '@':  # global variable like '@options' and '@macros'
+            elif tok[0] == "@":  # global variable like '@options' and '@macros'
                 name = tok[1:]
                 if name not in self.globals:
-                    self.error(f'no such global {name}')
+                    self.error(f"no such global {name}")
 
-                self.debug(f'global {tok}')
+                self.debug(f"global {tok}")
                 curr = self.globals[name]
                 stack = [curr]
                 self.restart()
@@ -175,24 +185,25 @@ class JdotDecoder:
             elif tok in self.macros:  # bare macro, instantiate without args
                 out = self.instantiate(self.macros[tok], [], tok)
 
-            elif tok == '!':  # show debugging info
-                print('macros', self.macros)
-                print('options', self.options)
-                print('stack', stack)
+            elif tok == "!":  # show debugging info
+                print("macros", self.macros)
+                print("options", self.options)
+                print("stack", stack)
                 continue
 
-
-            elif tok[0] == '.':  # dict key
+            elif tok[0] == ".":  # dict key
                 if curr is None:
-                    assert not self.globals['output']
-                    ret = curr = self.globals['output'] = dict()
+                    assert not self.globals["output"]
+                    ret = curr = self.globals["output"] = dict()
                     stack.append(curr)
 
                 if isinstance(curr, list):
-                    r = dict()     # open new dict by default
+                    r = dict()  # open new dict by default
                     curr.append(r)  # append it to the list
-                    curr = r        # and replace the list with it
-                elif key is not None:  # two keys in a row: parent dict has only one element (us)
+                    curr = r  # and replace the list with it
+                elif (
+                    key is not None
+                ):  # two keys in a row: parent dict has only one element (us)
                     # change curr without pushing
                     r = dict()
                     curr[key] = r
@@ -201,40 +212,40 @@ class JdotDecoder:
                 key = tok[1:]
                 continue
 
-            elif tok == '{':  # open dict outer
+            elif tok == "{":  # open dict outer
                 out = dict()
                 append_stack = True
 
-            elif tok == '<':  # open dict inner
+            elif tok == "<":  # open dict inner
                 out = InnerDict()
                 append_stack = True
 
-            elif tok == '[':  # open list
+            elif tok == "[":  # open list
                 out = list()
                 append_stack = True
 
-            elif tok == '}':  # close dict outer
+            elif tok == "}":  # close dict outer
                 if not isinstance(curr, dict):
-                    self.error('mismatched closing }')
+                    self.error("mismatched closing }")
                 stack.pop()
                 curr = stack[-1] if stack else None
                 continue
 
-            elif tok == ']':  # close list
+            elif tok == "]":  # close list
                 stack.pop()
                 if not isinstance(curr, list) and not isinstance(stack[-1], list):
-                    self.error('mismatched closing ]')
+                    self.error("mismatched closing ]")
                 curr = stack[-1] if stack else None
                 continue
 
-            elif tok == '>':  # close dict inner
+            elif tok == ">":  # close dict inner
                 if not isinstance(curr, InnerDict):
-                    self.error('mismatched closing >')
+                    self.error("mismatched closing >")
                 stack.pop()
                 curr = stack[-1] if stack else None
                 continue
 
-            elif tok == '(':  # open macro, instantiate with args
+            elif tok == "(":  # open macro, instantiate with args
                 name = next(it).string
                 args = self.iterdecode(it)  # recurse
                 if name not in self.macros:
@@ -242,16 +253,18 @@ class JdotDecoder:
 
                 out = self.instantiate(self.macros[name], args, name)  # mutates args
                 if args:  # none should be left over
-                    self.error(f'too many args given to "{name}" {args}: {self.macros[name]}')
+                    self.error(
+                        f'too many args given to "{name}" {args}: {self.macros[name]}'
+                    )
 
-            elif tok == ')':  # end macro arguments
+            elif tok == ")":  # end macro arguments
                 break  # exit recurse
 
-            elif tok == 'true':
+            elif tok == "true":
                 out = True
-            elif tok == 'false':
+            elif tok == "false":
                 out = False
-            elif tok == 'null':
+            elif tok == "null":
                 out = None
 
             else:
@@ -262,7 +275,7 @@ class JdotDecoder:
                     try:
                         out = float(tok)
                     except ValueError:
-                        if self.options['strict']:
+                        if self.options["strict"]:
                             self.error(f"unknown token '{out}' (strict mode)")
                         out = tok  # pass it through as a string to be nice
 
@@ -271,8 +284,8 @@ class JdotDecoder:
             if curr is None:
                 assert ret is None
                 assert not stack
-                assert not self.globals['output']
-                ret = curr = self.globals['output'] = list()
+                assert not self.globals["output"]
+                ret = curr = self.globals["output"] = list()
                 stack.append(curr)
 
             if isinstance(curr, dict):
@@ -283,12 +296,12 @@ class JdotDecoder:
                         deep_update(curr, out)
                         # leave old dict there, to be filled in with the 'new' dicts inners
                     else:
-                        self.error(f'no key given for value {self.literal(out)}')
+                        self.error(f"no key given for value {self.literal(out)}")
                 else:
                     if key in curr:
                         oldval = curr[key]
                         if not isinstance(oldval, type(out)):
-                            self.error(f'{key} has existing {type(oldval)} value')
+                            self.error(f"{key} has existing {type(oldval)} value")
                         if isinstance(out, dict):
                             deep_update(oldval, out)
                         elif isinstance(out, list):
@@ -305,7 +318,7 @@ class JdotDecoder:
                 curr.append(out)
 
             else:
-                self.error(f'non-container type {type(curr)} is current')
+                self.error(f"non-container type {type(curr)} is current")
 
             if append_stack:
                 stack.append(out)
@@ -314,16 +327,19 @@ class JdotDecoder:
         return ret
 
     def instantiate(self, v, args, tmplname):
-        ''
+        """"""
+
         def ignorable(obj):
             return isinstance(obj, Variable) and not obj.key
 
         if isinstance(v, InnerDict):
-            return InnerDict({
-                k: self.instantiate(x, args, tmplname)
-                for k, x in v.items()
-                if not ignorable(x)
-            })
+            return InnerDict(
+                {
+                    k: self.instantiate(x, args, tmplname)
+                    for k, x in v.items()
+                    if not ignorable(x)
+                }
+            )
         elif isinstance(v, dict):
             return {
                 k: self.instantiate(x, args, tmplname)
@@ -331,9 +347,8 @@ class JdotDecoder:
                 if not ignorable(x)
             }
         elif isinstance(v, list):
-            return list(self.instantiate(x, args, tmplname)
-                for x in v
-                if not ignorable(x)
+            return list(
+                self.instantiate(x, args, tmplname) for x in v if not ignorable(x)
             )
         elif isinstance(v, Variable):
             assert not ignorable(v)

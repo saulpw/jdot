@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 
 import sys
 import json
@@ -12,11 +13,11 @@ out = []
 
 for fn in sys.argv[1:]:
     contents = open(fn).read()
-    if fn.endswith('yaml'):
+    if fn.endswith("yaml"):
         d = yaml.load(contents, yaml.Loader)
-    elif fn.endswith('json'):
+    elif fn.endswith("json"):
         d = json.loads(contents)
-    elif fn.endswith('jdot'):
+    elif fn.endswith("jdot"):
         d = j.decode(contents)
 
     if isinstance(d, list):
@@ -24,4 +25,4 @@ for fn in sys.argv[1:]:
     elif d:
         out.append(d)
 
-print(j.encode(out, 'pretty'))
+print(j.encode(out, "pretty"))

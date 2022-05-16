@@ -1,13 +1,15 @@
-__all__ = ['JdotFormatter']
+# SPDX-License-Identifier: Apache-2.0
+
+__all__ = ["JdotFormatter"]
 
 
 class JdotFormatter:
     def __init__(
         self,
-        indent_str='  ',
+        indent_str="  ",
         length_limit=80,
         value_limit=5,
-        strip_spaces='',
+        strip_spaces="",
         close_on_same_line=False,
         dedent_last_value=False,
     ):
@@ -43,22 +45,22 @@ class JdotFormatter:
     @staticmethod
     def _is_open(token):
         """Whether a token is some kind of open-parenthesis."""
-        return isinstance(token, str) and token in set('({[<')
+        return isinstance(token, str) and token in set("({[<")
 
     @staticmethod
     def _is_close(token):
         """Whether a token is some kind of close-parenthesis."""
-        return isinstance(token, str) and token in set(')}]>')
+        return isinstance(token, str) and token in set(")}]>")
 
     @staticmethod
     def _is_key(token):
         """Whether a token is an object key."""
-        return isinstance(token, str) and token.startswith('.')
+        return isinstance(token, str) and token.startswith(".")
 
     @staticmethod
     def _is_at(token):
         """Whether a token is an @ selection."""
-        return isinstance(token, str) and token.startswith('@')
+        return isinstance(token, str) and token.startswith("@")
 
     @staticmethod
     def _is_spacing(token):
@@ -68,12 +70,12 @@ class JdotFormatter:
     @classmethod
     def _is_newline(cls, token):
         """Whether a token is whitespace including a newline."""
-        return cls._is_spacing(token) and '\n' in token
+        return cls._is_spacing(token) and "\n" in token
 
     @staticmethod
     def _is_comment(token):
         """Whether a token is a comment."""
-        return isinstance(token, str) and token.startswith('#')
+        return isinstance(token, str) and token.startswith("#")
 
     @staticmethod
     def _is_nested(token):
@@ -148,7 +150,7 @@ class JdotFormatter:
 
         # Accumulate the length of the tokens before this one.
         for token in reversed(self._output):
-            if '\n' in token:
+            if "\n" in token:
                 break
             length += len(token)
 
@@ -200,13 +202,13 @@ class JdotFormatter:
         """Emit the given amount of newlines with the current indentation
         level. Overrides any previously emitted whitespace."""
         self._strip_whitespace()
-        self._output.append(count*'\n' + self._indent*self._indent_str)
+        self._output.append(count * "\n" + self._indent * self._indent_str)
 
     def _emit_space(self):
         """Emit a single space, overriding any previously emitted
         whitespace."""
         self._strip_whitespace()
-        self._output.append(' ')
+        self._output.append(" ")
 
     def _emit_token(self, token):
         """Emit the given token, followed by the minimum amount of spacing
@@ -217,7 +219,7 @@ class JdotFormatter:
         # Handle non-nested tokens first.
         if not self._is_nested(token):
             self._output.append(token)
-            self._output.append(' ')
+            self._output.append(" ")
             return
         tokens = token
 
@@ -233,7 +235,7 @@ class JdotFormatter:
 
         # Macros get some special treatment here and there, because its first
         # "value" is just the name of the macro rather than an actual value.
-        is_macro = open_token == '('
+        is_macro = open_token == "("
 
         # Determine whether we should wrap these tokens.
         wrap = self._should_wrap(tokens, is_macro)
@@ -307,4 +309,4 @@ class JdotFormatter:
         self._emit_token(self._preprocess(tokens))
         self._indent = 0
         self._emit_newline()
-        return ''.join(self._output)
+        return "".join(self._output)

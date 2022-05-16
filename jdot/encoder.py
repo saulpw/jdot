@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 from .jdot import InnerDict, deep_match, deep_del, deep_len
 from .formatter import JdotFormatter
 
@@ -8,19 +10,17 @@ class JdotEncoder:
 
     def restart(self):
         self.revmacros = {
-            v: k
-            for k, v in self.macros.items()
-            if not isinstance(v, (dict, list))
+            v: k for k, v in self.macros.items() if not isinstance(v, (dict, list))
         }
 
     def iterencode(self, obj, sort_key=lambda x: 0, depth=0, parents=None):
-        ''
+        """"""
         if parents is None:
             parents = []
 
         if isinstance(obj, dict):
             if not obj:
-                yield '{}'
+                yield "{}"
                 return
 
             # emit first macro, if any match
@@ -36,10 +36,15 @@ class JdotEncoder:
 
                 if isinstance(m, dict):  # matched with args
                     if m:
-                        macro_invocation = ['(', macroname]
-                        args = [self.iterencode(x, sort_key, depth=depth+1) for x in m.values()]
-                        macro_invocation.extend(x.strip() for y in args for x in y if x.strip())
-                        macro_invocation.append(')')
+                        macro_invocation = ["(", macroname]
+                        args = [
+                            self.iterencode(x, sort_key, depth=depth + 1)
+                            for x in m.values()
+                        ]
+                        macro_invocation.extend(
+                            x.strip() for y in args for x in y if x.strip()
+                        )
+                        macro_invocation.append(")")
                     else:
                         macro_invocation = [macroname]
 
@@ -59,34 +64,38 @@ class JdotEncoder:
             show_braces = (depth != 0) and (len(macro_invocations) + len(obj) > 1)
 
             if show_braces:
-                yield '{'
+                yield "{"
 
             for innards in macro_invocations:
                 yield from innards
 
             for k, v in sorted(obj.items(), key=sort_key):
-                if any(x in k for x in ' .{}<>[]()'):
+                if any(x in k for x in " .{}<>[]()"):
                     k = self.literal(k)
-                yield f'.{k}'
-                yield from self.iterencode(v, sort_key, depth=depth+1, parents=parents+[obj])
+                yield f".{k}"
+                yield from self.iterencode(
+                    v, sort_key, depth=depth + 1, parents=parents + [obj]
+                )
 
             if show_braces:
-                yield '}'
+                yield "}"
 
         elif isinstance(obj, (list, tuple)):
             if not obj:
-                yield '['
-                yield ']'
+                yield "["
+                yield "]"
                 return
 
             if depth > 0:
-                yield '['
+                yield "["
 
             for v in obj:
-                yield from self.iterencode(v, sort_key, depth=depth+1, parents=parents+[obj])
+                yield from self.iterencode(
+                    v, sort_key, depth=depth + 1, parents=parents + [obj]
+                )
 
             if depth > 0:
-                yield ']'
+                yield "]"
 
         elif obj in self.revmacros:
             yield self.revmacros[obj]
@@ -100,25 +109,37 @@ class JdotEncoder:
 
             delim = "'" if obj.count('"') > obj.count("'") else '"'
 
-            r = ''
+            r = ""
             for ch in obj:
-                if ch in ['\\', delim]:
-                    r += '\\'
+                if ch in ["\\", delim]:
+                    r += "\\"
                 r += ch
 
             return delim + r + delim
 
         elif obj is True:
-            return 'true'
+            return "true"
         elif obj is False:
-            return 'false'
+            return "false"
         elif obj is None:
-            return 'null'
+            return "null"
         else:
-            return f'{obj}'
+            return f"{obj}"
 
     def encode_oneliner(self, obj):
-        return self.encode(obj, formatter=' '.join)
+        return self.encode(obj, formatter=" ".join)
+
+    @staticmethod
+    def _sort_as_is(x):
+        return 0
+
+    @staticmethod
+    def _sort_by_key(x):
+        return x
+
+    @staticmethod
+    def _sort_by_size(x):
+        return deep_len(x[1])
 
     def encode(self, obj, formatter=None, sort_key=None):
         """Encodes the given object as JDOT using the macros currently
@@ -136,13 +157,13 @@ class JdotEncoder:
         order by the number of primitive values in the value, or any function
         taking a key-value pair to be passed to sorted()."""
         if formatter is None:
-            formatter = ' '.join
-        elif formatter == 'pretty':
+            formatter = " ".join
+        elif formatter == "pretty":
             formatter = JdotFormatter()
         if sort_key is None:
-            sort_key = lambda x: 0
-        elif sort_key == 'key':
-            sort_key = lambda x: x
-        elif sort_key == 'size':
-            sort_key = lambda x: deep_len(x[1])
+            sort_key = self._sort_as_is
+        elif sort_key == "key":
+            sort_key = self._sort_by_key
+        elif sort_key == "size":
+            sort_key = self._sort_by_size
         return formatter(self.iterencode(obj, sort_key))
