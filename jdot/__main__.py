@@ -40,98 +40,101 @@ def iterobjs(d):
     else:
         yield d
 
+
 def argparser():
 
-    parser = argparse.ArgumentParser(description='jdot')
+    parser = argparse.ArgumentParser(description="jdot")
     inputs = parser.add_mutually_exclusive_group(required=False)
-    inputs.add_argument('-d', '--in-jdot', dest='in_jdot', type=str, required=False)
-    inputs.add_argument('-e', '-n', '--in-json', dest='in_json', type=str, required=False)
+    inputs.add_argument("-d", "--in-jdot", dest="in_jdot", type=str, required=False)
+    inputs.add_argument(
+        "-e", "-n", "--in-json", dest="in_json", type=str, required=False
+    )
     out_format = parser.add_mutually_exclusive_group(required=False)
     out_format.add_argument(
-        '-j',
-        '--out-json',
-        dest='out_json',
-        action='store_true',
+        "-j",
+        "--out-json",
+        dest="out_json",
+        action="store_true",
         default=True,
         required=False,
     )
     out_format.add_argument(
-        '-m', '--out-jdot', dest='out_json', action='store_false', required=False
+        "-m", "--out-jdot", dest="out_json", action="store_false", required=False
     )
-    parser.add_argument('--debug', action='store_true', default=False, required=False)
-    format_options = parser.add_argument_group('Format options')
+    parser.add_argument("--debug", action="store_true", default=False, required=False)
+    format_options = parser.add_argument_group("Format options")
     format_options.add_argument(
-        '-p',
-        '--pretty',
-        dest='pretty_print',
-        action='store_true',
+        "-p",
+        "--pretty",
+        dest="pretty_print",
+        action="store_true",
         default=False,
         required=False,
     )
     format_options.add_argument(
-        '--indent',
+        "--indent",
         type=int,
         default=4,
         required=False,
-        help='number of spaces to indent in output (defaults to 4)',
+        help="number of spaces to indent in output (defaults to 4)",
     )
     format_options.add_argument(
-        '--indent-str',
+        "--indent-str",
         type=str,
         required=False,
-        help='specify which indentation character(s) to use.',
+        help="specify which indentation character(s) to use.",
     )
     format_options.add_argument(
-        '--length-limit',
+        "--length-limit",
         type=int,
         required=False,
-        help='''
+        help="""
         specify an approximate maximum number of characters that will be considered
         for emitting a group of tokens on a single line.
-        ''',
+        """,
     )
     format_options.add_argument(
-        '--value-limit',
+        "--value-limit",
         type=int,
         required=False,
-        help='''
+        help="""
         specify the number of contained non-nested values that will be considered
         for emitting a group of tokens on a single line.
-        ''',
+        """,
     )
     format_options.add_argument(
-        '--strip-spaces',
+        "--strip-spaces",
         type=str,
         required=False,
-        help='''
+        help="""
         strip_spaces specifies for which parenthesis types the space
         immediately after the open paran or immediately before the close
         paren will be stripped. For example, specifying strip_spaces='[]'
         will emit lists as [1 2 3] instead of [ 1 2 3 ].
-    ''',
+    """,
     )
     format_options.add_argument(
-        '--close-on-same-line',
-        action='store_true',
+        "--close-on-same-line",
+        action="store_true",
         required=False,
-        help='''
+        help="""
         place closing paren for multiline groups after the last enclosed value and
         not on a newline
-        ''',
+        """,
     )
     format_options.add_argument(
-        '--dedent-last-value',
-        action='store_true',
+        "--dedent-last-value",
+        action="store_true",
         required=False,
-        help='''
+        help="""
         whenever both the current group and the last inner group are wrapped, the
         latter is not indented.  This works best when used in conjunction with dict
         entries sorted by increasing size.
-    ''',
+    """,
     )
     ordering = format_options.add_mutually_exclusive_group(required=False)
-    ordering.add_argument('--order-by-key', action='store_true', required=False)
-    ordering.add_argument('--order-by-size', action='store_true', required=False)
+    ordering.add_argument("--order-by-key", action="store_true", required=False)
+    ordering.add_argument("--order-by-size", action="store_true", required=False)
 
     return parser
 
@@ -158,19 +161,20 @@ def main():
     format_options["indent_str"] = " " * args.indent
     if args.indent_str:
         format_options["indent_str"] = args.indent_str
-    format_options['length_limit'] = args.length_limit
-    format_options['value_limit'] = args.value_limit
-    format_options['strip_spaces'] = args.strip_spaces
-    format_options['close_on_same_line'] = args.close_on_same_line
-    format_options['dedent_last_value'] = args.dedent_last_value
+    format_options["length_limit"] = args.length_limit
+    format_options["value_limit"] = args.value_limit
+    format_options["strip_spaces"] = args.strip_spaces
+    format_options["close_on_same_line"] = args.close_on_same_line
+    format_options["dedent_last_value"] = args.dedent_last_value
     if args.order_by_key:
-        sort_key = 'key'
+        sort_key = "key"
     elif args.order_by_size:
-        sort_key = 'size'
+        sort_key = "size"
 
     if args.debug:
-        j.options['debug'] = True
-        
+
+        j.options["debug"] = True
+
     if jdotargs:
         d = j.decode(" ".join(jdotargs))
         objs.extend(iterobjs(d))
