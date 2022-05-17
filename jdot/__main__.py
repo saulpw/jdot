@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 
 import sys
 import json
@@ -170,6 +171,7 @@ def main():
         sort_key = "size"
 
     if args.debug:
+
         j.options["debug"] = True
 
     if jdotargs:

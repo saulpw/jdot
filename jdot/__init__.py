@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 import sys
 
 
@@ -17,7 +19,7 @@ class JdotCoder(JdotEncoder, JdotDecoder):
         self.globals = dict(macros=self.macros, options=self.options)
 
     def debug(self, *args, **kwargs):
-        if self.options['debug']:
+        if self.options["debug"]:
             print(*args, file=sys.stderr, **kwargs)
 
 

@@ -1,0 +1,9 @@
+header:
+  license:
+    spdx-id: Apache-2.0
+
+  paths:
+    - 'jdot/**'
+    - '*.py'
+
+  comment: never
