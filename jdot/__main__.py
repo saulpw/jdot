@@ -141,7 +141,6 @@ def argparser():
 def main():
     jdotargs = []
     objs = []
-    pretty_print = False
     format_options = {}
     sort_key = None
     j = JdotCoder()
