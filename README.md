@@ -10,7 +10,6 @@ Remove all the extraneous symbols from JSON, and it becomes a lot easier to read
 
 Conversion between reasonable JSON and JDOT is lossless.
 
-
 ## Features
 
 - no extraneous characters
@@ -583,6 +582,12 @@ Top := SectionName InnerDict
 
 Jdot := Top+
 ```
+
+# Etymology
+
+The name of the format, "JDOT", comes from the Icelandic "Jdóttir".  In Iceland, surnames are not familial, but patronymic: if Bob has a son, his surname would be Bobson; if Bob has a daughter, her surname would be Bobdóttir.  So a prettier sister format of Json might be named "Jdóttir".
+
+Also the "dot" (period) is one of the few punctuation characters used in JDOT, and the most common one at that.
 
 # Future ideas (not implemented yet)
   - multiple variables with the same `?varname` should match the same value, and should only be passed in the macro args once.

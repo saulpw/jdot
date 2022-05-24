@@ -44,10 +44,10 @@ def iterobjs(d):
 def argparser():
 
     parser = argparse.ArgumentParser(description="jdot")
-    inputs = parser.add_mutually_exclusive_group(required=False)
-    inputs.add_argument("-d", "--in-jdot", dest="in_jdot", type=str, required=False)
+    inputs = parser.add_argument_group("Inputs")
+    inputs.add_argument("-d", "--in-jdot", dest="in_jdot", type=str, required=False, action='append', nargs='?')
     inputs.add_argument(
-        "-e", "-n", "--in-json", dest="in_json", type=str, required=False
+        "-e", "-n", "--in-json", dest="in_json", type=str, required=False, action='append', nargs='?'
     )
     out_format = parser.add_mutually_exclusive_group(required=False)
     out_format.add_argument(
@@ -150,12 +150,15 @@ def main():
     args, jdotargs = argparser().parse_known_args(argv)
 
     if args.in_jdot:
-        d = j.decode(read_arg(args.in_jdot))
-        objs.extend(iterobjs(d))
-    elif args.in_json:
-        d = json.loads(read_arg(args.in_json))
-        objs.extend(iterobjs(d))
-        args.out_json = False
+        for f_jdot in args.in_jdot:
+            d = j.decode(read_arg(f_jdot))
+            objs.extend(iterobjs(d))
+            args.out_json = True
+    if args.in_json:
+        for f_json in args.in_json:
+            d = json.loads(read_arg(f_json))
+            objs.extend(iterobjs(d))
+            args.out_json = False
 
     format_options["indent_str"] = " " * args.indent
     if args.indent_str:
